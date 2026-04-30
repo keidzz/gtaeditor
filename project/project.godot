@@ -15,10 +15,7 @@ run/main_scene="uid://c6bj14svio2ir"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
 
-GameManager="*res://scripts/game_manager.gd"
-AssetLoader="*res://scripts/asset_loader.gd"
 
 [editor_plugins]
 
@@ -26,5 +23,9 @@ enabled=PackedStringArray("res://addons/sky_3d/plugin.cfg", "res://addons/tessar
 
 [rendering]
 
+limits/global_shader_variables/buffer_size=1048576
+limits/shader_parameters/max_instances=65536
+limits/opengl/max_renderable_elements=131072
+limits/opengl/max_renderable_lights=4096
 anti_aliasing/quality/msaa_3d=1
 vrs/quality/msaa_3d=0

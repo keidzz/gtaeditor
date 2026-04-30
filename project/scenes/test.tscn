@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://c6bj14svio2ir"]
+[gd_scene format=3 uid="uid://c6bj14svio2ir"]
 
 [ext_resource type="Script" uid="uid://br6b4uik4d7ds" path="res://prefabs/fly/fly.gd" id="1_bl13t"]
 [ext_resource type="Script" uid="uid://buh0ye2inxqwg" path="res://scripts/model.gd" id="2_iyx0m"]
@@ -14,23 +14,23 @@ sky_material = SubResource("ProceduralSkyMaterial_ij1v8")
 background_mode = 2
 sky = SubResource("Sky_errlg")
 
-[node name="Test" type="Node3D"]
+[node name="Test" type="Node3D" unique_id=1897932658]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1222899526]
 environment = SubResource("Environment_bl13t")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1337064847]
 shadow_enabled = true
 
-[node name="FlyCamera" type="CharacterBody3D" parent="."]
+[node name="FlyCamera" type="CharacterBody3D" parent="." unique_id=1168361500]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.756, 1.581, 22.184)
 script = ExtResource("1_bl13t")
 metadata/_custom_type_script = "uid://br6b4uik4d7ds"
 
-[node name="cj" type="Node3D" parent="."]
+[node name="cj" type="Node3D" parent="." unique_id=1497261570]
 script = ExtResource("2_iyx0m")
 
-[node name="tree" type="Node3D" parent="."]
+[node name="tree" type="Node3D" parent="." unique_id=576609956]
 script = ExtResource("2_iyx0m")
 model_name = "veg_bevtree2"
 txd_name = "gta_tree_boak"

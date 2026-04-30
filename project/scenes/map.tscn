@@ -1,6 +1,5 @@
-[gd_scene load_steps=24 format=3 uid="uid://bv310bobncs2x"]
+[gd_scene format=3 uid="uid://bv310bobncs2x"]
 
-[ext_resource type="Script" uid="uid://w5dkshronp2r" path="res://scripts/map_builder.gd" id="1_paxxb"]
 [ext_resource type="Script" uid="uid://br6b4uik4d7ds" path="res://prefabs/fly/fly.gd" id="2_paxxb"]
 [ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="3_wslke"]
 [ext_resource type="Texture2D" uid="uid://cfqk60lpl5ljv" path="res://addons/sky_3d/assets/resources/SNoise.tres" id="4_gw3fx"]
@@ -32,6 +31,7 @@ shader_parameter/atm_level_params = Vector3(1, 0, 0)
 shader_parameter/atm_thickness = 0.7
 shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
 shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
+shader_parameter/sun_light_color = Color(1, 1, 1, 1)
 shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
 shader_parameter/sun_disk_intensity = 30.0
 shader_parameter/sun_disk_size = 0.02
@@ -53,40 +53,35 @@ shader_parameter/starmap_flip_u = false
 shader_parameter/starmap_flip_v = false
 shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
 shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -11.218425491619957
+shader_parameter/star_rotation = -11.246857883220983
 shader_parameter/star_tilt = -1.2915436464758039
 shader_parameter/star_field_color = Color(1, 1, 1, 1)
 shader_parameter/star_field_texture = ExtResource("8_c70he")
 shader_parameter/star_scintillation = 0.75
 shader_parameter/star_scintillation_speed = 0.01
 shader_parameter/noise_tex = ExtResource("7_p7tei")
+shader_parameter/clouds_night_color = Color(0.090196, 0.094118, 0.129412, 1)
 shader_parameter/cirrus_visible = true
+shader_parameter/cirrus_intensity = 2.0
 shader_parameter/cirrus_coverage = 0.5
 shader_parameter/cirrus_thickness = 1.7
 shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
-shader_parameter/cirrus_intensity = 10.0
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.02316795, 0.02316795)
-shader_parameter/cirrus_position2 = Vector2(0.02316795, 0.02316795)
-shader_parameter/cirrus_day_color = Color(0.824, 0.875, 1, 1)
-shader_parameter/cirrus_horizon_light_color = Color(0.98, 0.43, 0.15, 1)
-shader_parameter/cirrus_night_color = Color(0.09, 0.094, 0.129, 1)
+shader_parameter/cirrus_position1 = Vector2(0.14423732, 0.14423732)
+shader_parameter/cirrus_position2 = Vector2(0.14423732, 0.14423732)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
+shader_parameter/cumulus_intensity = 0.6
 shader_parameter/cumulus_coverage = 0.55
 shader_parameter/cumulus_thickness = 0.0243
 shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
-shader_parameter/cumulus_intensity = 0.6
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(10.124721, 10.124721)
+shader_parameter/cumulus_position = Vector2(0.72108316, 0.72108316)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
-shader_parameter/cumulus_day_color = Color(0.823529, 0.87451, 1, 1)
-shader_parameter/cumulus_horizon_light_color = Color(0.98, 0.43, 0.15, 1)
-shader_parameter/cumulus_night_color = Color(0.090196, 0.094118, 0.129412, 1)
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
 shader_parameter/show_azimuthal_grid = false
@@ -95,7 +90,7 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(0, -0.68218505, 0.73117965, -0.986331, 0.12048071, 0.11240759, -0.1647758, -0.72118515, -0.6728602)
+shader_parameter/moon_matrix = Basis(0, 0.6677827, -0.74435616, -0.96049464, 0.2071532, 0.18584293, 0.2782985, 0.71495014, 0.64140177)
 
 [sub_resource type="Sky" id="Sky_2cfcp"]
 sky_material = SubResource("ShaderMaterial_4b7dj")
@@ -108,6 +103,7 @@ ambient_light_color = Color(1, 1, 1, 1)
 reflected_light_source = 2
 tonemap_mode = 3
 tonemap_white = 6.0
+sdfgi_enabled = true
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_5u2yt"]
 
@@ -133,20 +129,17 @@ domain_warp_texture = SubResource("NoiseTexture2D_nuoa6")
 choppiness = 0.5
 wave_scroll_speed = -0.003
 
-[node name="Map" type="Node3D"]
+[node name="Map" type="Node3D" unique_id=143196836]
 
-[node name="Map" type="Node3D" parent="."]
-script = ExtResource("1_paxxb")
-
-[node name="FlyCamera" type="CharacterBody3D" parent="."]
+[node name="FlyCamera" type="CharacterBody3D" parent="." unique_id=804967236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 21.998528, 1669.6431)
 script = ExtResource("2_paxxb")
 metadata/_custom_type_script = "uid://br6b4uik4d7ds"
 
-[node name="CSGBox3D" type="CSGBox3D" parent="."]
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1417168564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 24.37539, 1669.6431)
 
-[node name="Sky3D" type="WorldEnvironment" parent="."]
+[node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1300654363]
 environment = SubResource("Environment_y2ir2")
 camera_attributes = SubResource("CameraAttributesPractical_5u2yt")
 script = ExtResource("10_6k6j1")
@@ -157,40 +150,43 @@ current_time = 12.0
 wind_direction = 2.35619451204804
 metadata/_custom_type_script = "uid://deo0gxkmk2ahd"
 
-[node name="SunLight" type="DirectionalLight3D" parent="Sky3D"]
-transform = Transform3D(0, -0.9993337, -0.03649939, 0.6307106, -0.028324187, 0.7755011, -0.77601814, -0.02302055, 0.6302903, -0.03649939, 0.7755011, 0.6302903)
+[node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=615458439]
+transform = Transform3D(0.9985913, 0.04123192, -0.03339601, 0, 0.62940073, 0.7770809, 0.05306001, -0.7759862, 0.6285141, -0.03339601, 0.7770809, 0.6285141)
 shadow_enabled = true
 
-[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D"]
-transform = Transform3D(0, -0.9863311, -0.16477583, -0.682185, 0.12048072, -0.7211852, 0.7311796, 0.1124076, -0.67286026, -0.16477582, -0.72118515, -0.6728602)
+[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=380598873]
+transform = Transform3D(0, -0.96049464, 0.27829847, 0.6677828, 0.2071532, 0.71495014, -0.7443562, 0.18584293, 0.64140177, 0.27829847, 0.71495014, 0.64140177)
 light_color = Color(0.572549, 0.776471, 0.956863, 1)
 light_energy = 0.0
 
-[node name="SkyDome" type="Node" parent="Sky3D"]
+[node name="SkyDome" type="Node" parent="Sky3D" unique_id=1217487878]
 script = ExtResource("11_m335s")
-sun_azimuth = -3.199437
-sun_altitude = -0.683288
-moon_azimuth = -6.043023
-moon_altitude = -2.376308
+sun_azimuth = -3.1946776
+sun_altitude = -0.6807818
+moon_azimuth = -2.7322154
+moon_altitude = -0.77424353
 fog_visible = false
 wind_direction = 2.35619451204804
 
-[node name="TimeOfDay" type="Node" parent="Sky3D"]
+[node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=977070257]
 script = ExtResource("12_sq6bu")
 editor_time_enabled = false
 game_time_enabled = false
 dome_path = NodePath("../SkyDome")
 current_time = 12.0
 
-[node name="Ocean" type="Node" parent="."]
+[node name="Ocean" type="Node" parent="." unique_id=1695660416]
 script = ExtResource("13_c00ee")
 ocean = SubResource("Resource_c70he")
 metadata/_custom_type_script = "uid://h580nry2aua6"
 
-[node name="QuadTree3D" type="Node3D" parent="Ocean"]
+[node name="QuadTree3D" type="Node3D" parent="Ocean" unique_id=705248444]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -11.15, 0)
 script = ExtResource("13_n1psn")
 lod_level = 7
 quad_size = 32768.0
 ranges = Array[float]([250.0, 500.0, 1900.0, 3800.0, 7600.0, 15200.0, 30400.0, 60800.0])
 material = ExtResource("14_c00ee")
+
+[node name="MapBuilder" type="MapBuilder" parent="." unique_id=744991882]
+streaming_distance = 300.0
