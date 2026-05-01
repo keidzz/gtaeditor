@@ -4,22 +4,22 @@
 #include "rw_chunk.h"
 #include "rw_material_list.h"
 #include <godot_cpp/classes/array_mesh.hpp>
+#include <godot_cpp/templates/vector.hpp>
+#include <godot_cpp/variant/packed_vector2_array.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 #include <godot_cpp/variant/vector3.hpp>
-#include <godot_cpp/variant/packed_vector2_array.hpp>
-#include <godot_cpp/templates/vector.hpp>
 
 /// Geometry format flags (from the RenderWare specification).
 enum RWGeometryFlags : uint32_t {
-	rpGEOMETRY_TRISTRIP       = 0x00000001,
-	rpGEOMETRY_POSITIONS      = 0x00000002,
-	rpGEOMETRY_TEXTURED       = 0x00000004,
-	rpGEOMETRY_PRELIT         = 0x00000008,
-	rpGEOMETRY_NORMALS        = 0x00000010,
-	rpGEOMETRY_LIGHT          = 0x00000020,
+	rpGEOMETRY_TRISTRIP = 0x00000001,
+	rpGEOMETRY_POSITIONS = 0x00000002,
+	rpGEOMETRY_TEXTURED = 0x00000004,
+	rpGEOMETRY_PRELIT = 0x00000008,
+	rpGEOMETRY_NORMALS = 0x00000010,
+	rpGEOMETRY_LIGHT = 0x00000020,
 	rpGEOMETRY_MODULATE_COLOR = 0x00000040,
-	rpGEOMETRY_TEXTURED2      = 0x00000080,
-	rpGEOMETRY_NATIVE         = 0x01000000,
+	rpGEOMETRY_TEXTURED2 = 0x00000080,
+	rpGEOMETRY_NATIVE = 0x01000000,
 };
 
 /// A single triangle referencing three vertices and a material.

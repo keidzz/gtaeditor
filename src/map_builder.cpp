@@ -1,6 +1,7 @@
 #include "map_builder.h"
 #include "asset_loader.h"
-#include "streamed_mesh.h"
+
+#include <godot_cpp/templates/hash_set.hpp>
 
 #include <godot_cpp/classes/box_shape3d.hpp>
 #include <godot_cpp/classes/collision_shape3d.hpp>
@@ -24,6 +25,10 @@ void MapBuilder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_streaming_distance", "distance"), &MapBuilder::set_streaming_distance);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "streaming_distance"), "set_streaming_distance", "get_streaming_distance");
 
+	ClassDB::bind_method(D_METHOD("get_draw_distance_multiplier"), &MapBuilder::get_draw_distance_multiplier);
+	ClassDB::bind_method(D_METHOD("set_draw_distance_multiplier", "multiplier"), &MapBuilder::set_draw_distance_multiplier);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "draw_distance_multiplier"), "set_draw_distance_multiplier", "get_draw_distance_multiplier");
+
 	ClassDB::bind_method(D_METHOD("get_spawns_per_frame_limit"), &MapBuilder::get_spawns_per_frame_limit);
 	ClassDB::bind_method(D_METHOD("set_spawns_per_frame_limit", "limit"), &MapBuilder::set_spawns_per_frame_limit);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "spawns_per_frame_limit"), "set_spawns_per_frame_limit", "get_spawns_per_frame_limit");
@@ -31,6 +36,9 @@ void MapBuilder::_bind_methods() {
 
 float MapBuilder::get_streaming_distance() const { return streaming_distance; }
 void MapBuilder::set_streaming_distance(float p_dist) { streaming_distance = p_dist; }
+
+float MapBuilder::get_draw_distance_multiplier() const { return draw_distance_multiplier; }
+void MapBuilder::set_draw_distance_multiplier(float p_mult) { draw_distance_multiplier = p_mult; }
 
 int MapBuilder::get_spawns_per_frame_limit() const { return spawns_per_frame_limit; }
 void MapBuilder::set_spawns_per_frame_limit(int p_limit) { spawns_per_frame_limit = p_limit; }
@@ -124,7 +132,7 @@ void MapBuilder::_ready() {
 	UtilityFunctions::print("Loaded " + String::num_int64(placements.size()) +
 							" placements (" + String::num_int64(hd_count) + " HD, " +
 							String::num_int64(lod_count) + " LOD, " +
-							String::num_int64(lod_to_parent.size()) + " LOD links)");
+							String::num_int64(lod_to_parents.size()) + " LOD links)");
 }
 
 // ── IPL group loading with per-group LOD resolution ──────────────────────────
@@ -166,14 +174,36 @@ void MapBuilder::_load_ipl_group(const String &ipl_path) {
 		auto &pl = placements[i];
 		if (pl->lod_index >= 0 && pl->lod_index < (group_end - group_base)) {
 			int lod_global_idx = group_base + pl->lod_index;
+
+			// Skip self-references (some IPL entries point to themselves)
+			if (lod_global_idx == i)
+				continue;
+
 			auto &lod_pl = placements[lod_global_idx];
 
-			// Mark the target as LOD
+			// Mark the target as LOD (primary mechanism)
 			lod_pl->is_lod = true;
 			// Link: HD parent (i) → LOD child (lod_global_idx)
 			pl->lod_child_index = lod_global_idx;
 			// Reverse link for O(1) lookup in _process()
-			lod_to_parent.insert(lod_global_idx, i);
+			if (!lod_to_parents.has(lod_global_idx)) {
+				lod_to_parents.insert(lod_global_idx, Vector<int>());
+			}
+			lod_to_parents[lod_global_idx].push_back(i);
+		}
+	}
+
+	// ── Fallback: mark orphan LODs by name prefix ────────────────────────
+	// Some LOD models (e.g. islandlod*, lod*) exist without an HD parent
+	// pointing to them via lod_index. Mark these as LODs too so they don't
+	// render as duplicate full-quality objects.
+	for (int i = group_base; i < group_end; i++) {
+		auto &pl = placements[i];
+		if (!pl->is_lod) {
+			String name_lower = pl->model_name.to_lower();
+			if (name_lower.begins_with("lod") || name_lower.begins_with("islandlod")) {
+				pl->is_lod = true;
+			}
 		}
 	}
 }
@@ -190,85 +220,209 @@ void MapBuilder::_process(double p_delta) {
 	}
 
 	Vector3 cam_pos = camera->get_global_position();
-
-	int cell_radius = static_cast<int>(Math::ceil(streaming_distance / CELL_SIZE)) + 1;
-	CellCoord cam_cell = _cell_for_position(cam_pos);
-
 	int spawns_this_frame = 0;
 
-	for (int cx = cam_cell.x - cell_radius; cx <= cam_cell.x + cell_radius; cx++) {
-		for (int cz = cam_cell.z - cell_radius; cz <= cam_cell.z + cell_radius; cz++) {
-			CellCoord cell = { cx, cz };
-			if (!spatial_grid.has(cell))
-				continue;
+	// ── Step 1: Poll loading meshes ──────────────────────────────────────
+	// Only iterate meshes that are actively loading (not all instances).
+	for (int i = loading_meshes.size() - 1; i >= 0; i--) {
+		auto &pair = loading_meshes[i];
+		StreamedMesh *sm = pair.second;
+		if (sm != nullptr && sm->poll_loading()) {
+			// Loading complete — mark as loaded for LOD visibility ONLY if still active
+			if (sm->is_mesh_loaded() && active_instances.has(pair.first)) {
+				loaded_instances.insert(pair.first);
+			}
+			loading_meshes.remove_at(i);
+		}
+	}
 
-			const Vector<int> &cell_placements = spatial_grid[cell];
-			for (int i = 0; i < cell_placements.size(); i++) {
-				int idx = cell_placements[i];
-				const auto &placement = placements[idx];
-				float distance = cam_pos.distance_to(placement->position);
-				float draw_dist = _get_draw_distance(placement);
-				float unload_dist = draw_dist * 1.2f;
-				bool is_active = active_instances.has(idx);
+	// ── Step 1b: Retroactively hide LODs whose HD parent just loaded ─────
+	// This is critical: a LOD may have been spawned while its HD parent was
+	// still loading. Now that the parent is loaded, the LOD must be hidden.
+	// (Matches SanAndreasUnity's StaticGeometry.UpdateVisibility() pattern)
+	{
+		Vector<int> lods_to_hide;
+		for (auto &kv : active_instances) {
+			int idx = kv.key;
+			const auto &placement = placements[idx];
+			if (placement->is_lod && lod_to_parents.has(idx)) {
+				const Vector<int> &parents = lod_to_parents[idx];
+				bool any_parent_loaded = false;
+				for (int p = 0; p < parents.size(); p++) {
+					if (loaded_instances.has(parents[p])) {
+						any_parent_loaded = true;
+						break;
+					}
+				}
+				if (any_parent_loaded) {
+					lods_to_hide.push_back(idx);
+				}
+			}
+		}
+		for (int i = 0; i < lods_to_hide.size(); i++) {
+			int idx = lods_to_hide[i];
+			if (active_instances.has(idx)) {
+				Node3D *instance = active_instances[idx];
+				instance->set_visible(false);
+				active_instances.erase(idx);
+				loaded_instances.erase(idx);
+				hidden_instances.insert(idx, instance);
+				hidden_lru.push_back(idx);
+			}
+		}
+	}
 
-				if (distance < draw_dist && !is_active) {
-					// ── LOD visibility rule (like SanAndreasUnity) ───────
-					// A LOD model is visible ONLY when its HD parent is NOT active.
-					if (placement->is_lod) {
-						if (lod_to_parent.has(idx)) {
-							int parent_idx = lod_to_parent[idx];
-							if (active_instances.has(parent_idx)) {
-								continue; // HD parent is visible, hide LOD
-							}
-						}
+	// ── Step 2: Spawn in-range placements ────────────────────────────────
+	bool printed_debug = false;
+	for (int t = 0; t < grid_tiers.size(); t++) {
+		auto &tier = grid_tiers[t];
+
+		// Use the tier's max distance capped by the global streaming distance limit
+		// (LODs can use up to 3x streaming distance)
+		float check_dist = tier.max_distance;
+		if (t == 0)
+			check_dist = MIN(check_dist, streaming_distance);
+		else
+			check_dist = MIN(check_dist, streaming_distance * 3.0f);
+
+		int cell_radius = static_cast<int>(Math::ceil(check_dist / tier.cell_size)) + 1;
+		CellCoord cam_cell = _cell_for_position(cam_pos, tier.cell_size);
+
+		for (int cx = cam_cell.x - cell_radius; cx <= cam_cell.x + cell_radius; cx++) {
+			for (int cz = cam_cell.z - cell_radius; cz <= cam_cell.z + cell_radius; cz++) {
+				CellCoord cell = { cx, cz };
+				if (!tier.cells.has(cell))
+					continue;
+
+				const Vector<int> &cell_placements = tier.cells[cell];
+				for (int i = 0; i < cell_placements.size(); i++) {
+					int idx = cell_placements[i];
+					const auto &placement = placements[idx];
+					float distance = cam_pos.distance_to(placement->position);
+					float draw_dist = _get_draw_distance(placement);
+
+					bool is_active = active_instances.has(idx);
+					bool is_hidden = hidden_instances.has(idx);
+
+					if (!printed_debug && is_active) {
+						UtilityFunctions::print("Active ID ", placement->id, " draw_dist: ", draw_dist);
+						printed_debug = true;
 					}
 
-					if (spawns_this_frame < spawns_per_frame_limit) {
+					if (distance < draw_dist && !is_active) {
+						// ── LOD visibility rule (like SanAndreasUnity) ───────
+						// A LOD model is visible ONLY when its HD parent has
+						// a LOADED mesh (not just spawned).
+						if (placement->is_lod) {
+							if (lod_to_parents.has(idx)) {
+								const Vector<int> &parents = lod_to_parents[idx];
+								bool any_parent_loaded = false;
+								for (int p = 0; p < parents.size(); p++) {
+									if (loaded_instances.has(parents[p])) {
+										any_parent_loaded = true;
+										break;
+									}
+								}
+								if (any_parent_loaded) {
+									continue; // HD parent mesh loaded, hide LOD
+								}
+							}
+						}
+
+						if (spawns_this_frame >= spawns_per_frame_limit)
+							continue;
+
+						// ── Try to re-show a hidden instance first ───────────
+						if (is_hidden) {
+							Node3D *instance = hidden_instances[idx];
+							instance->set_visible(true);
+							active_instances.insert(idx, instance);
+							hidden_instances.erase(idx);
+							hidden_lru.erase(idx);
+							// Restore loaded state
+							StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
+							if (sm != nullptr && sm->is_mesh_loaded()) {
+								loaded_instances.insert(idx);
+							}
+							spawns_this_frame++;
+							
+							if (placement->is_lod) {
+								UtilityFunctions::print("LOD model reappeared: ", placement->model_name, " at distance ", distance);
+							}
+							continue;
+						}
+
+						// ── Spawn a new instance ─────────────────────────────
 						bool near = (distance < PHYSICS_DISTANCE);
 						Node3D *instance = _spawn_placement(placement, near);
 						if (instance != nullptr) {
 							map_root->add_child(instance);
 							active_instances.insert(idx, instance);
+
+							// Check if it loaded from cache (immediate)
+							StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
+							if (sm != nullptr) {
+								if (sm->is_mesh_loaded()) {
+									loaded_instances.insert(idx);
+								} else if (sm->get_load_state() == StreamedMesh::LOADING) {
+									loading_meshes.push_back({ idx, sm });
+								}
+							}
 						}
 						spawns_this_frame++;
+
+					} else if (distance > draw_dist * UNLOAD_HYSTERESIS && is_active) {
+						// ── Hide instead of destroy ──────────────────────────
+						Node3D *instance = active_instances[idx];
+						instance->set_visible(false);
+						active_instances.erase(idx);
+						loaded_instances.erase(idx);
+						hidden_instances.insert(idx, instance);
+						hidden_lru.push_back(idx);
+						
+						if (!placement->is_lod) {
+							UtilityFunctions::print("HD model unloaded: ", placement->model_name, " at distance ", distance);
+						}
 					}
-				} else if (distance > unload_dist && is_active) {
-					Node3D *instance = active_instances[idx];
-					instance->queue_free();
-					active_instances.erase(idx);
 				}
 			}
 		}
 	}
 
-	// Cleanup out-of-range instances (handles teleportation)
+	// ── Step 3: Cleanup far-away active instances (teleportation) ────────
 	Vector<int> to_remove;
 	for (auto &kv : active_instances) {
 		const auto &placement = placements[kv.key];
 		float distance = cam_pos.distance_to(placement->position);
-		float unload_dist = _get_draw_distance(placement) * 1.2f;
+		float unload_dist = _get_draw_distance(placement) * UNLOAD_HYSTERESIS;
 
 		if (distance > unload_dist) {
-			kv.value->queue_free();
+			kv.value->set_visible(false);
+			hidden_instances.insert(kv.key, kv.value);
+			hidden_lru.push_back(kv.key);
 			to_remove.push_back(kv.key);
 		}
 	}
 	for (int i = 0; i < to_remove.size(); i++) {
 		active_instances.erase(to_remove[i]);
+		loaded_instances.erase(to_remove[i]);
 	}
+
+	// ── Step 4: Evict oldest hidden instances if pool overflows ─────────
+	_evict_hidden_pool();
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 float MapBuilder::_get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) const {
 	if (items.has(pl->id)) {
-		float dd = items[pl->id]->render_distance;
+		float dd = items[pl->id]->render_distance * draw_distance_multiplier;
 		if (dd > 0.0f) {
-			// LOD models can use their full draw distance (they're cheap)
-			// HD models are capped to streaming_distance
 			if (pl->is_lod) {
-				return MIN(dd, streaming_distance * 2.0f);
+				// LOD models are cheap — allow up to 3x streaming distance
+				return MIN(dd, streaming_distance * 3.0f);
 			}
+			// HD models: respect game's draw distance capped to streaming_distance
 			return MIN(dd, streaming_distance);
 		}
 	}
@@ -276,23 +430,48 @@ float MapBuilder::_get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) c
 }
 
 void MapBuilder::_build_spatial_grid() {
+	grid_tiers.clear();
+
+	// Tier 0: HD small props (0 - 300)
+	grid_tiers.push_back({ 100.0f, 300.0f, {} });
+	// Tier 1: Medium objects / Medium LODs (300 - 1000)
+	grid_tiers.push_back({ 400.0f, 1000.0f, {} });
+	// Tier 2: Far LODs (1000+)
+	grid_tiers.push_back({ 1000.0f, 10000.0f, {} });
+
 	for (int i = 0; i < placements.size(); i++) {
 		// Skip interior placements
 		if (placements[i]->interior != 0 && placements[i]->interior != 13)
 			continue;
 
-		CellCoord cell = _cell_for_position(placements[i]->position);
-		if (!spatial_grid.has(cell)) {
-			spatial_grid.insert(cell, Vector<int>());
+		float dd = 300.0f;
+		if (items.has(placements[i]->id)) {
+			dd = items[placements[i]->id]->render_distance;
+			if (placements[i]->is_lod) {
+				dd *= 3.0f; // Roughly estimate max possible distance
+			}
 		}
-		spatial_grid[cell].push_back(i);
+
+		int tier_idx = 0;
+		if (dd > 1000.0f)
+			tier_idx = 2;
+		else if (dd > 300.0f)
+			tier_idx = 1;
+
+		float cell_size = grid_tiers[tier_idx].cell_size;
+		CellCoord cell = _cell_for_position(placements[i]->position, cell_size);
+
+		if (!grid_tiers.ptrw()[tier_idx].cells.has(cell)) {
+			grid_tiers.ptrw()[tier_idx].cells.insert(cell, Vector<int>());
+		}
+		grid_tiers.ptrw()[tier_idx].cells[cell].push_back(i);
 	}
 }
 
-MapBuilder::CellCoord MapBuilder::_cell_for_position(const Vector3 &pos) const {
+MapBuilder::CellCoord MapBuilder::_cell_for_position(const Vector3 &pos, float cell_size) const {
 	return {
-		static_cast<int>(Math::floor(pos.x / CELL_SIZE)),
-		static_cast<int>(Math::floor(pos.z / CELL_SIZE))
+		static_cast<int>(Math::floor(pos.x / cell_size)),
+		static_cast<int>(Math::floor(pos.z / cell_size))
 	};
 }
 
@@ -303,6 +482,40 @@ void MapBuilder::_clear_map() {
 	map_root = memnew(Node3D);
 	map_root->set_name("GTAMap");
 	active_instances.clear();
+	loaded_instances.clear();
+	loading_meshes.clear();
+	hidden_instances.clear();
+	hidden_lru.clear();
+}
+
+void MapBuilder::_evict_hidden_pool() {
+	for (int i = 0; i < hidden_lru.size();) {
+		if (hidden_instances.size() <= MAX_HIDDEN_POOL)
+			break;
+
+		int idx = hidden_lru[i];
+		Node3D *instance = hidden_instances[idx];
+
+		// Do not evict if still loading (prevent dangling pointers)
+		StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
+		if (sm && sm->get_load_state() == StreamedMesh::LOADING) {
+			i++;
+			continue;
+		}
+
+		hidden_lru.remove_at(i);
+		hidden_instances.erase(idx);
+
+		// Remove from loading_meshes if present
+		for (int j = loading_meshes.size() - 1; j >= 0; j--) {
+			if (loading_meshes[j].first == idx) {
+				loading_meshes.remove_at(j);
+				break;
+			}
+		}
+
+		instance->queue_free();
+	}
 }
 
 // ── Spawning ─────────────────────────────────────────────────────────────────
@@ -320,13 +533,15 @@ Node3D *MapBuilder::_spawn_placement(const std::shared_ptr<ItemPlacement> &ipl, 
 	}
 
 	StreamedMesh *instance = memnew(StreamedMesh);
-	instance->init(item);
+	bool cache_hit = instance->init(item);
 	instance->set_position(ipl->position);
 	instance->set_scale(ipl->scale);
 	instance->set_quaternion(ipl->rotation);
 
-	float vis_range = _get_draw_distance(ipl);
-	instance->set_visibility_range_end(vis_range);
+	// Start background loading if not served from cache
+	if (!cache_hit) {
+		instance->start_loading();
+	}
 
 	// Only attach lights and collision for nearby objects
 	if (near) {
@@ -425,26 +640,15 @@ void MapBuilder::_read_ide_line(const String &section, const PackedStringArray &
 		item->model_name = tokens[1];
 		item->txd_name = tokens[2];
 
-		int mesh_count = tokens[3].to_int();
-		item->draw_distance_count = mesh_count;
-
-		if (mesh_count >= 1 && tokens.size() > 4) {
-			item->render_distance = tokens[4].to_float();
-		}
-		if (mesh_count >= 2 && tokens.size() > 5) {
-			item->render_distance_2 = tokens[5].to_float();
-		}
-		if (mesh_count >= 3 && tokens.size() > 6) {
-			item->render_distance_3 = tokens[6].to_float();
+		// GTA SA format: ID, ModelName, TxdName, DrawDistance, Flags
+		if (tokens.size() > 4) {
+			item->render_distance = tokens[3].to_float();
+			item->flags = tokens[4].to_int();
 		}
 
-		item->flags = tokens[tokens.size() - 1].to_int();
-
-		// Detect LOD models by name prefix
-		String name_lower = item->model_name.to_lower();
-		if (name_lower.begins_with("lod") || name_lower.begins_with("islandlod")) {
-			item->is_lod = true;
-		}
+		// NOTE: is_lod is NOT set here. It is ONLY set by the LOD linking
+		// pass in _load_ipl_group(). Name-prefix detection is unreliable
+		// because many GTA SA LOD models don't have the "lod" prefix.
 
 		items.insert(id, item);
 	} else if (section == "2dfx") {
@@ -496,11 +700,7 @@ void MapBuilder::_read_ipl_line(const String &section, const PackedStringArray &
 	placement->lod_index = tokens[10].to_int();
 	placement->scale = Vector3(1, 1, 1);
 
-	// Tag LOD by name prefix (resolved properly in _load_ipl_group)
-	String name_lower = placement->model_name.to_lower();
-	if (name_lower.begins_with("lod") || name_lower.begins_with("islandlod")) {
-		placement->is_lod = true;
-	}
+	// NOTE: is_lod is NOT set here — only set by LOD linking pass.
 
 	placements.push_back(placement);
 }
@@ -559,10 +759,7 @@ void MapBuilder::_parse_binary_ipl(const String &asset_name, Vector<std::shared_
 			placement->rotation = Quaternion(-rot_x, -rot_z, -rot_y, rot_w);
 			placement->scale = Vector3(1, 1, 1);
 
-			String name_lower = placement->model_name.to_lower();
-			if (name_lower.begins_with("lod") || name_lower.begins_with("islandlod")) {
-				placement->is_lod = true;
-			}
+			// NOTE: is_lod is NOT set here — only set by LOD linking pass.
 
 			out.push_back(placement);
 		}

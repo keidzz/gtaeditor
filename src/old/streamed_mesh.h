@@ -21,7 +21,6 @@ public:
 	std::shared_ptr<ItemDef> idef;
 	Ref<Mesh> mesh_result;
 	bool is_completed = false; // Flag to indicate completion
-	bool cache_hit = false; // True if mesh was served from cache
 
 	void load_mesh();
 
@@ -30,49 +29,29 @@ protected:
 };
 
 /// A MeshInstance3D that lazily loads its mesh data on a background thread.
-///
-/// Key design: StreamedMesh does NOT run _process(). Instead, MapBuilder
-/// calls poll_loading() only for meshes that are in the LOADING state.
-/// This eliminates thousands of per-frame _process() calls.
 class StreamedMesh : public MeshInstance3D {
 	GDCLASS(StreamedMesh, MeshInstance3D);
 
 public:
-	enum LoadState {
-		IDLE, // Not loading, no mesh
-		LOADING, // Task submitted, waiting for completion
-		LOADED, // Mesh data ready, assigned
-	};
-
 	StreamedMesh();
 	~StreamedMesh();
 
 	/// Initialize with an item definition. Must be called before adding to tree.
-	/// Returns true if mesh was immediately available from cache.
-	bool init(const std::shared_ptr<ItemDef> &p_idef);
+	void init(const std::shared_ptr<ItemDef> &p_idef);
 
-	/// Poll the background loading task. Called by MapBuilder only when
-	/// this mesh is in LOADING state. Returns true when loading is complete.
-	bool poll_loading();
-
-	/// Start the background loading task. Called by MapBuilder when spawning.
-	void start_loading();
-
-	/// Cancel any pending load task.
-	void cancel_loading();
-
-	/// Get the current load state.
-	LoadState get_load_state() const { return _state; }
-
-	/// Check if this mesh has a fully loaded & assigned mesh.
-	bool is_mesh_loaded() const { return _state == LOADED && get_mesh().is_valid(); }
-
+	void _process(double p_delta) override;
 	void _exit_tree() override;
 
 protected:
 	static void _bind_methods();
 
 private:
+	enum LoadState {
+		IDLE, // Not loading, no mesh
+		LOADING, // Task submitted, waiting for completion
+		LOADED, // Mesh data ready, assigned
+	};
+
 	std::shared_ptr<ItemDef> _idef;
 	LoadState _state = IDLE;
 

@@ -26,7 +26,7 @@ DebugMenu="*uid://cggqb75a8w8r"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/addons/debug_menu/plugin.cfg", "res://addons/debug_menu/plugin.cfg", "res://addons/sky_3d/plugin.cfg", "res://addons/tessarakkt.oceanfft/plugin.cfg")
+enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/sky_3d/plugin.cfg", "res://addons/tessarakkt.oceanfft/plugin.cfg")
 
 [rendering]
 

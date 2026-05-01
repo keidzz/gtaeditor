@@ -7,10 +7,10 @@
 #include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
-#include <godot_cpp/classes/standard_material3d.hpp>
-#include <godot_cpp/classes/viewport.hpp>
-#include <godot_cpp/classes/thread.hpp>
 #include <godot_cpp/classes/semaphore.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
+#include <godot_cpp/classes/thread.hpp>
+#include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
@@ -70,7 +70,8 @@ private:
 		MeshLoaderQueue &q = get();
 		while (q.running) {
 			q.semaphore->wait();
-			if (!q.running) break;
+			if (!q.running)
+				break;
 
 			Ref<MeshLoadTaskData> task;
 			q.mutex->lock();
@@ -109,7 +110,8 @@ static void _apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent
 // ── Background task payload ──────────────────────────────────────────────────
 
 void MeshLoadTaskData::load_mesh() {
-	if (!idef) return;
+	if (!idef)
+		return;
 
 	AssetLoader &loader = AssetLoader::get();
 
@@ -117,7 +119,7 @@ void MeshLoadTaskData::load_mesh() {
 		return;
 	}
 
-	// ── Check mesh cache first (no lock needed for the wrapper) ───────────
+	// ── Check mesh cache first (no lock needed for the wrapper) ────────────
 	Ref<ArrayMesh> cached_mesh = loader.get_cached_mesh(idef->model_name);
 	if (cached_mesh.is_valid()) {
 		mesh_result = cached_mesh;
@@ -164,11 +166,13 @@ void MeshLoadTaskData::load_mesh() {
 	for (int gi = 0; gi < (int)clump.geometry_list.geometries.size(); gi++) {
 		RWGeometry &geom = clump.geometry_list.geometries.write[gi];
 		Ref<ArrayMesh> mesh = geom.build_mesh();
-		if (mesh.is_null()) continue;
+		if (mesh.is_null())
+			continue;
 
 		for (int surf = 0; surf < mesh->get_surface_count(); surf++) {
 			Ref<StandardMaterial3D> mat = mesh->surface_get_material(surf);
-			if (mat.is_null()) continue;
+			if (mat.is_null())
+				continue;
 
 			mat->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
 
@@ -225,6 +229,7 @@ void MeshLoadTaskData::load_mesh() {
 		}
 
 		mesh_result = mesh;
+		break;
 	}
 
 	loader.cache_mutex->unlock();
@@ -237,66 +242,60 @@ StreamedMesh::~StreamedMesh() {}
 
 void StreamedMesh::_bind_methods() {}
 
-void StreamedMesh::init(const std::shared_ptr<ItemDef> &p_idef) {
+bool StreamedMesh::init(const std::shared_ptr<ItemDef> &p_idef) {
 	_idef = p_idef;
+
+	// Try cache immediately — no background task needed for cache hits
+	if (_idef && !(_idef->flags & 0x40)) {
+		Ref<ArrayMesh> cached = AssetLoader::get().get_cached_mesh(_idef->model_name);
+		if (cached.is_valid()) {
+			set_mesh(cached);
+			_state = LOADED;
+			return true;
+		}
+	}
+	return false;
 }
 
-void StreamedMesh::_exit_tree() {
+void StreamedMesh::start_loading() {
+	if (_state != IDLE || _idef == nullptr)
+		return;
+
+	_task_data.instantiate();
+	_task_data->idef = _idef;
+	MeshLoaderQueue::get().add_task(_task_data);
+	_state = LOADING;
+}
+
+bool StreamedMesh::poll_loading() {
+	if (_state != LOADING)
+		return true; // Already done or idle
+	if (!_task_data.is_valid()) {
+		_state = IDLE;
+		return true;
+	}
+
+	if (!_task_data->is_completed) {
+		return false; // Still loading
+	}
+
+	// Loading complete — apply result
+	if (_task_data->mesh_result.is_valid()) {
+		set_mesh(_task_data->mesh_result);
+	}
+	_task_data.unref();
+	_state = LOADED;
+	return true;
+}
+
+void StreamedMesh::cancel_loading() {
 	if (_state == LOADING && _task_data.is_valid()) {
 		MeshLoaderQueue::get().cancel_task(_task_data);
 	}
 	_task_data.unref();
+	_state = IDLE;
 }
 
-void StreamedMesh::_process(double p_delta) {
-	if (_idef == nullptr) return;
-
-	Viewport *vp = get_viewport();
-	if (vp == nullptr) return;
-	Camera3D *cam = vp->get_camera_3d();
-	if (cam == nullptr) return;
-
-	float dist = cam->get_global_position().distance_to(get_global_position());
-	float range = get_visibility_range_end();
-
-	switch (_state) {
-		case IDLE: {
-			if (dist < range && get_mesh().is_null()) {
-				// Try cache first — instant, no background task
-				Ref<ArrayMesh> cached = AssetLoader::get().get_cached_mesh(_idef->model_name);
-				if (cached.is_valid()) {
-					set_mesh(cached);
-					_state = LOADED;
-					break;
-				}
-
-				_task_data.instantiate();
-				_task_data->idef = _idef;
-				MeshLoaderQueue::get().add_task(_task_data);
-				_state = LOADING;
-			}
-			break;
-		}
-
-		case LOADING: {
-			if (!_task_data->is_completed) {
-				return;
-			}
-			
-			if (_task_data.is_valid() && _task_data->mesh_result.is_valid()) {
-				set_mesh(_task_data->mesh_result);
-			}
-			_task_data.unref();
-			_state = LOADED;
-			break;
-		}
-
-		case LOADED: {
-			if (dist > range && get_mesh().is_valid()) {
-				set_mesh(Ref<Mesh>());
-				_state = IDLE;
-			}
-			break;
-		}
-	}
+void StreamedMesh::_exit_tree() {
+	cancel_loading();
 }

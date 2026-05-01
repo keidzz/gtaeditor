@@ -6,12 +6,14 @@
 #include "classes/item_placement.h"
 #include "classes/tdfx.h"
 #include "classes/tdfx_light.h"
+#include "streamed_mesh.h"
 
 #include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
 #include <memory>
@@ -23,8 +25,10 @@ using namespace godot;
 /// Streaming model (inspired by SanAndreasUnity):
 ///   - Each placement uses its ItemDef::render_distance for streaming range
 ///   - LOD placements are resolved per-IPL-group (text + binary streams)
-///   - A LOD model is shown only when its HD parent is NOT active
+///   - A LOD model is shown only when its HD parent is NOT active with a loaded mesh
 ///   - Collision and lights are only attached within physics_distance
+///   - StreamedMesh instances do NOT run _process(); MapBuilder polls loading meshes
+///   - Hidden instances are pooled instead of destroyed to reduce node churn
 class MapBuilder : public Node {
 	GDCLASS(MapBuilder, Node);
 
@@ -40,6 +44,12 @@ public:
 
 	float get_streaming_distance() const;
 	void set_streaming_distance(float p_dist);
+
+	/// Multiplier for extending HD model visibility range.
+	float draw_distance_multiplier = 3.0f;
+
+	float get_draw_distance_multiplier() const;
+	void set_draw_distance_multiplier(float p_mult);
 
 	/// Maximum number of placements to spawn per frame.
 	int spawns_per_frame_limit = 50;
@@ -76,21 +86,50 @@ private:
 		}
 	};
 
-	static constexpr float CELL_SIZE = 200.0f;
-	HashMap<CellCoord, Vector<int>, CellCoordHash> spatial_grid;
+	struct SpatialGridTier {
+		float cell_size = 200.0f;
+		float max_distance = 300.0f;
+		HashMap<CellCoord, Vector<int>, CellCoordHash> cells;
+	};
 
-	/// Active (spawned) instances: placement index → scene node.
+	Vector<SpatialGridTier> grid_tiers;
+
+	// ── Active instances ─────────────────────────────────────────────────
+
+	/// Active (spawned and visible) instances: placement index → scene node.
 	HashMap<int, Node3D *> active_instances;
 
-	/// Reverse LOD map: LOD placement index → HD parent placement index.
-	/// Used for O(1) lookup: "is my HD parent currently active?"
-	HashMap<int, int> lod_to_parent;
+	/// Set of placement indices whose StreamedMesh has fully loaded its mesh.
+	/// Used for LOD visibility: LOD is hidden only when parent is in this set.
+	HashSet<int> loaded_instances;
+
+	/// StreamedMesh instances currently in LOADING state, need polling.
+	/// Pair: (placement_index, StreamedMesh pointer)
+	Vector<std::pair<int, StreamedMesh *>> loading_meshes;
+
+	// ── Hidden instance pool (reduces node churn) ────────────────────────
+
+	/// Hidden (out-of-range) instances kept alive for fast re-show.
+	HashMap<int, Node3D *> hidden_instances;
+
+	/// LRU order for hidden instances (front = oldest).
+	Vector<int> hidden_lru;
+
+	/// Maximum number of hidden instances to keep pooled.
+	static constexpr int MAX_HIDDEN_POOL = 2000;
+
+	/// Reverse LOD map: LOD placement index → HD parent placement indices.
+	/// Used for O(1) lookup: "are any of my HD parents currently active?"
+	HashMap<int, Vector<int>> lod_to_parents;
 
 	/// Distance within which collision/lights are attached.
 	static constexpr float PHYSICS_DISTANCE = 120.0f;
 
+	/// Hysteresis multiplier for unloading (unload at draw_dist * this).
+	static constexpr float UNLOAD_HYSTERESIS = 1.1f;
+
 	void _build_spatial_grid();
-	CellCoord _cell_for_position(const Vector3 &pos) const;
+	CellCoord _cell_for_position(const Vector3 &pos, float cell_size) const;
 
 	/// Get the effective streaming distance for a placement.
 	float _get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) const;
@@ -109,6 +148,9 @@ private:
 	void _parse_binary_ipl(const String &asset_name, Vector<std::shared_ptr<ItemPlacement>> &out);
 	void _clear_map();
 	Node3D *_spawn_placement(const std::shared_ptr<ItemPlacement> &ipl, bool near);
+
+	/// Evict oldest hidden instances if pool exceeds MAX_HIDDEN_POOL.
+	void _evict_hidden_pool();
 
 	/// Temporary buffer for per-IPL-group LOD resolution.
 	int _ipl_group_base = 0;

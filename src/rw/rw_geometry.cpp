@@ -1,6 +1,6 @@
 #include "rw_geometry.h"
-#include <godot_cpp/classes/surface_tool.hpp>
 #include <godot_cpp/classes/mesh.hpp>
+#include <godot_cpp/classes/surface_tool.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 
 // ── Parser ───────────────────────────────────────────────────────────────────
@@ -13,16 +13,16 @@ void RWGeometry::parse(Ref<FileAccess> file) {
 	RWChunk struct_chunk;
 	struct_chunk.read_header(file);
 
-	format             = file->get_32();
-	tri_count          = file->get_32();
-	vert_count         = file->get_32();
+	format = file->get_32();
+	tri_count = file->get_32();
+	vert_count = file->get_32();
 	morph_target_count = file->get_32();
 
 	// Older versions store lighting parameters inline
 	if (get_version() < 0x34000) {
-		ambient      = file->get_float();
+		ambient = file->get_float();
 		specular_val = file->get_float();
-		diffuse      = file->get_float();
+		diffuse = file->get_float();
 	}
 
 	// Only parse vertex data if this isn't a native-format geometry
@@ -65,10 +65,10 @@ void RWGeometry::parse(Ref<FileAccess> file) {
 		tris.resize(tri_count);
 		for (uint32_t i = 0; i < tri_count; i++) {
 			RWTriangle &tri = tris.write[i];
-			tri.vertex_2    = file->get_16();
-			tri.vertex_1    = file->get_16();
+			tri.vertex_2 = file->get_16();
+			tri.vertex_1 = file->get_16();
 			tri.material_id = file->get_16();
-			tri.vertex_3    = file->get_16();
+			tri.vertex_3 = file->get_16();
 		}
 	}
 
@@ -77,13 +77,13 @@ void RWGeometry::parse(Ref<FileAccess> file) {
 	for (uint32_t i = 0; i < morph_target_count; i++) {
 		RWMorphTarget &mt = morph_targets.write[i];
 
-		mt.bounding_sphere.x      = file->get_float();
-		mt.bounding_sphere.y      = file->get_float();
-		mt.bounding_sphere.z      = file->get_float();
+		mt.bounding_sphere.x = file->get_float();
+		mt.bounding_sphere.y = file->get_float();
+		mt.bounding_sphere.z = file->get_float();
 		mt.bounding_sphere.radius = file->get_float();
 
 		mt.has_vertices = file->get_32() != 0;
-		mt.has_normals  = file->get_32() != 0;
+		mt.has_normals = file->get_32() != 0;
 
 		if (mt.has_vertices) {
 			mt.vertices.resize(vert_count);
