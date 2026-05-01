@@ -18,18 +18,13 @@
 
 using namespace godot;
 
-/// Builds and streams the GTA San Andreas world map.
+/// Builds and streams the GTA San Andreas world map with LOD support.
 ///
-/// On _ready():
-///   - Initializes AssetLoader (resolves game path, loads IMG archive)
-///   - Reads gta.dat to discover IDE, IPL, COLFILE, and IMG entries
-///   - Parses all item definitions, placements, and collision files
-///   - Links 2DFX children and collision data to their parent items
-///   - Assigns placements to a spatial grid for efficient streaming
-///
-/// On _process():
-///   - Checks camera position against the spatial grid
-///   - Spawns/despawns placement instances based on streaming distance
+/// Streaming model (inspired by SanAndreasUnity):
+///   - Each placement uses its ItemDef::render_distance for streaming range
+///   - LOD placements are resolved per-IPL-group (text + binary streams)
+///   - A LOD model is shown only when its HD parent is NOT active
+///   - Collision and lights are only attached within physics_distance
 class MapBuilder : public Node {
 	GDCLASS(MapBuilder, Node);
 
@@ -40,13 +35,13 @@ public:
 	void _ready() override;
 	void _process(double p_delta) override;
 
-	/// Streaming distance (how far the camera can see models).
-	float streaming_distance = 100.0f;
+	/// Maximum streaming distance (caps per-object render_distance).
+	float streaming_distance = 300.0f;
 
 	float get_streaming_distance() const;
 	void set_streaming_distance(float p_dist);
 
-	/// Maximum number of placement instances to spawn per frame to avoid stuttering.
+	/// Maximum number of placements to spawn per frame.
 	int spawns_per_frame_limit = 50;
 
 	int get_spawns_per_frame_limit() const;
@@ -57,73 +52,66 @@ protected:
 
 private:
 	// ── Data stores ──────────────────────────────────────────────────────
-	HashMap<int, std::shared_ptr<ItemDef>> items;       // ID → ItemDef
-	Vector<std::shared_ptr<TDFX>> item_children;        // 2DFX effects pending linkage
-	Vector<std::shared_ptr<ItemPlacement>> placements;   // All world placements
-	Vector<std::shared_ptr<ColFile>> collisions;         // All collision files
+	HashMap<int, std::shared_ptr<ItemDef>> items;
+	Vector<std::shared_ptr<TDFX>> item_children;
+	Vector<std::shared_ptr<ItemPlacement>> placements;
+	Vector<std::shared_ptr<ColFile>> collisions;
 
 	// ── Scene nodes ──────────────────────────────────────────────────────
 	Node3D *map_root = nullptr;
 	Camera3D *camera = nullptr;
 
-	// ── Streaming state ──────────────────────────────────────────────────
-
-	/// Key for spatial grid cells (integer grid coordinates).
+	// ── Spatial grid ─────────────────────────────────────────────────────
 	struct CellCoord {
 		int x = 0;
 		int z = 0;
 		bool operator==(const CellCoord &other) const { return x == other.x && z == other.z; }
 	};
 
-	/// Hash function for CellCoord used in HashMap.
 	struct CellCoordHash {
 		static _FORCE_INLINE_ uint32_t hash(const CellCoord &c) {
-			// Combine x and z with a simple hash mix
 			uint32_t h = static_cast<uint32_t>(c.x) * 73856093;
 			h ^= static_cast<uint32_t>(c.z) * 19349663;
 			return h;
 		}
 	};
 
-	/// Spatial grid: maps cell coordinates to indices into the placements array.
-	/// Populated once after all placements are loaded, then read-only during streaming.
 	static constexpr float CELL_SIZE = 200.0f;
 	HashMap<CellCoord, Vector<int>, CellCoordHash> spatial_grid;
 
 	/// Active (spawned) instances: placement index → scene node.
 	HashMap<int, Node3D *> active_instances;
 
-	/// Populate the spatial grid from the placements array.
-	void _build_spatial_grid();
+	/// Reverse LOD map: LOD placement index → HD parent placement index.
+	/// Used for O(1) lookup: "is my HD parent currently active?"
+	HashMap<int, int> lod_to_parent;
 
-	/// Get the cell coordinate for a world position.
+	/// Distance within which collision/lights are attached.
+	static constexpr float PHYSICS_DISTANCE = 120.0f;
+
+	void _build_spatial_grid();
 	CellCoord _cell_for_position(const Vector3 &pos) const;
 
-	// ── Parsing helpers ──────────────────────────────────────────────────
+	/// Get the effective streaming distance for a placement.
+	float _get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) const;
 
-	/// Read a section-based GTA data file (IDE or IPL).
-	/// Calls the handler for each non-comment, non-section-header line.
+	// ── Parsing helpers ──────────────────────────────────────────────────
 	void _read_map_data(const String &path,
 						void (MapBuilder::*handler)(const String &, const PackedStringArray &, const String &),
 						const String &context);
 
-	/// Parse one line from an IDE file (item definitions).
 	void _read_ide_line(const String &section, const PackedStringArray &tokens, const String &context);
-
-	/// Parse one line from a text IPL file (item placements).
 	void _read_ipl_line(const String &section, const PackedStringArray &tokens, const String &context);
 
-	/// Try to load binary IPL stream files (e.g., countryN_stream0.ipl).
-	void _load_binary_ipl_streams(const String &base_ipl_path);
+	/// Load a full IPL group (text + binary streams) and resolve LOD links within it.
+	void _load_ipl_group(const String &ipl_path);
 
-	/// Parse a single binary IPL stream file from the IMG archive.
-	void _parse_binary_ipl(const String &asset_name);
-
-	/// Clear the current map and create a fresh root node.
+	void _parse_binary_ipl(const String &asset_name, Vector<std::shared_ptr<ItemPlacement>> &out);
 	void _clear_map();
+	Node3D *_spawn_placement(const std::shared_ptr<ItemPlacement> &ipl, bool near);
 
-	/// Spawn a placement instance as a scene node. Returns null if the item is unknown.
-	Node3D *_spawn_placement(const std::shared_ptr<ItemPlacement> &ipl);
+	/// Temporary buffer for per-IPL-group LOD resolution.
+	int _ipl_group_base = 0;
 };
 
 #endif // GTAEDITOR_MAP_BUILDER_H

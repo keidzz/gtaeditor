@@ -21,6 +21,7 @@ public:
 	std::shared_ptr<ItemDef> idef;
 	Ref<Mesh> mesh_result;
 	bool is_completed = false; // Flag to indicate completion
+	bool cache_hit = false;    // True if mesh was served from cache
 
 	void load_mesh();
 
@@ -47,9 +48,9 @@ protected:
 
 private:
 	enum LoadState {
-		IDLE, // Not loading, no mesh
+		IDLE,    // Not loading, no mesh
 		LOADING, // Task submitted, waiting for completion
-		LOADED, // Mesh data ready, assigned
+		LOADED,  // Mesh data ready, assigned
 	};
 
 	std::shared_ptr<ItemDef> _idef;

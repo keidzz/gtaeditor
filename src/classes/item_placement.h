@@ -14,7 +14,13 @@ struct ItemPlacement {
 	godot::Vector3 position;
 	godot::Vector3 scale = godot::Vector3(1.0f, 1.0f, 1.0f);
 	godot::Quaternion rotation;
-	int lod_index = -1; // -1 = no LOD parent, otherwise index to parent object
+	/// Index of the LOD parent placement (-1 = no LOD parent, i.e. this IS a LOD model).
+	int lod_index = -1;
+	/// Index of the LOD child (lower-detail version) of this placement (-1 = none).
+	/// Populated after all placements are loaded by the LOD linking pass.
+	int lod_child_index = -1;
+	/// Whether this placement is a LOD model (low-detail version).
+	bool is_lod = false;
 };
 
 #endif // GTAEDITOR_ITEM_PLACEMENT_H
