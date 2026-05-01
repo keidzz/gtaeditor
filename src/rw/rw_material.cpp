@@ -37,10 +37,14 @@ void RWMaterial::parse(Ref<FileAccess> file) {
 	skip(file);
 }
 
-Ref<StandardMaterial3D> RWMaterial::create_material() const {
+Ref<StandardMaterial3D> RWMaterial::create_material(bool use_vertex_colors) const {
 	Ref<StandardMaterial3D> mat;
 	mat.instantiate();
 	mat->set_albedo(color);
+
+	if (use_vertex_colors) {
+		mat->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	}
 
 	// Apply roughness from specular for newer versions
 	if (get_version() > 0x30400) {

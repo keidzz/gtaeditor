@@ -23,7 +23,7 @@ public:
 
 	/// Create a new StandardMaterial3D from the parsed data.
 	/// Each call returns a NEW material instance (needed for per-surface materials).
-	Ref<StandardMaterial3D> create_material() const;
+	Ref<StandardMaterial3D> create_material(bool use_vertex_colors = false) const;
 };
 
 #endif // GTAEDITOR_RW_MATERIAL_H

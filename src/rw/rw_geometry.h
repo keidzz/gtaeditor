@@ -61,6 +61,7 @@ public:
 
 	uint32_t uv_count = 0;
 	Vector<PackedVector2Array> uvs;
+	PackedColorArray prelit_colors;
 	Vector<RWTriangle> tris;
 	Vector<RWMorphTarget> morph_targets;
 	RWMaterialList material_list;

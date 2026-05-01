@@ -27,9 +27,16 @@ void RWGeometry::parse(Ref<FileAccess> file) {
 
 	// Only parse vertex data if this isn't a native-format geometry
 	if (!(format & rpGEOMETRY_NATIVE)) {
-		// Skip prelit vertex colors (4 bytes per vertex)
+		// Read prelit vertex colors (4 bytes per vertex)
 		if (format & rpGEOMETRY_PRELIT) {
-			file->seek(file->get_position() + (vert_count * 4));
+			prelit_colors.resize(vert_count);
+			for (uint32_t v = 0; v < vert_count; v++) {
+				float r = file->get_8() / 255.0f;
+				float g = file->get_8() / 255.0f;
+				float b = file->get_8() / 255.0f;
+				float a = file->get_8() / 255.0f; // Read but ignore for color to avoid transparency issues
+				prelit_colors.set(v, Color(r, g, b, 1.0f));
+			}
 		}
 
 		// Determine UV layer count from format flags
@@ -154,6 +161,9 @@ Ref<ArrayMesh> RWGeometry::build_mesh() {
 				if (uvs.size() > 0 && idx < (uint16_t)uvs[0].size()) {
 					st->set_uv(uvs[0][idx]);
 				}
+				if (prelit_colors.size() > 0 && idx < (uint16_t)prelit_colors.size()) {
+					st->set_color(prelit_colors[idx]);
+				}
 
 				st->add_vertex(mt.vertices[idx]);
 			}
@@ -161,7 +171,7 @@ Ref<ArrayMesh> RWGeometry::build_mesh() {
 
 		// Set material for this surface
 		const RWMaterial &rwmat = material_list.materials[kv.key];
-		Ref<StandardMaterial3D> mat = rwmat.create_material();
+		Ref<StandardMaterial3D> mat = rwmat.create_material(prelit_colors.size() > 0);
 
 		if (rwmat.is_textured) {
 			mat->set_meta("texture_name", rwmat.texture.texture_name);

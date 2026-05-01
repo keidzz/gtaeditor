@@ -8,24 +8,31 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="gtaeditor"
+config/version="1.0.0"
 run/main_scene="uid://c6bj14svio2ir"
-config/features=PackedStringArray("4.5", "Forward Plus")
+config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
 
+DebugMenu="*uid://cggqb75a8w8r"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/sky_3d/plugin.cfg", "res://addons/tessarakkt.oceanfft/plugin.cfg")
+enabled=PackedStringArray("res://addons/addons/debug_menu/plugin.cfg", "res://addons/debug_menu/plugin.cfg", "res://addons/sky_3d/plugin.cfg", "res://addons/tessarakkt.oceanfft/plugin.cfg")
 
 [rendering]
 
+anti_aliasing/quality/msaa_3d=1
 limits/global_shader_variables/buffer_size=1048576
-limits/shader_parameters/max_instances=65536
 limits/opengl/max_renderable_elements=131072
 limits/opengl/max_renderable_lights=4096
-anti_aliasing/quality/msaa_3d=1
+limits/shader_parameters/max_instances=65536
 vrs/quality/msaa_3d=0

@@ -95,14 +95,14 @@ static void _apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent
 	mat->set_transparency(BaseMaterial3D::TRANSPARENCY_DISABLED);
 	mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_OPAQUE_ONLY);
 
-	if (is_transparent) {
-		// Material color has alpha < 1
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
-	} else if (alpha_mode != Image::ALPHA_NONE) {
-		// Texture has alpha (trees, fences, etc.)
+	if (alpha_mode != Image::ALPHA_NONE) {
+		// Texture has alpha (trees, fences, etc.) - ALWAYS use scissor so shadows cast correctly
 		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
 		mat->set_alpha_scissor_threshold(0.5f);
+	} else if (is_transparent) {
+		// Material color has alpha < 1 but texture has no alpha
+		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
 	}
 }
 
