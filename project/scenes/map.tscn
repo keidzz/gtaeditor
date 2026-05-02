@@ -65,8 +65,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.66615945, 0.66615945)
-shader_parameter/cirrus_position2 = Vector2(0.66615945, 0.66615945)
+shader_parameter/cirrus_position1 = Vector2(0.12938593, 0.12938593)
+shader_parameter/cirrus_position2 = Vector2(0.12938593, 0.12938593)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -76,7 +76,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(3.3309176, 3.3309176)
+shader_parameter/cumulus_position = Vector2(0.646845, 0.646845)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -148,4 +148,6 @@ dome_path = NodePath("../SkyDome")
 current_time = 12.0
 
 [node name="MapBuilder" type="MapBuilder" parent="." unique_id=744991882]
+streaming_distance = 1000.0
 spawns_per_frame_limit = 30
+debug_enabled = true

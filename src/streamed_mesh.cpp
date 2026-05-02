@@ -174,15 +174,9 @@ void MeshLoadTaskData::load_mesh() {
 			if (mat.is_null())
 				continue;
 
-			bool is_transparent = mat->get_albedo().a < 0.95f;
+			mat->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
 
-			// Enable backface culling for opaque models to improve performance and fix visual issues.
-			// Only disable culling for transparent materials (like leaves, fences, etc).
-			if (is_transparent) {
-				mat->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
-			} else {
-				mat->set_cull_mode(BaseMaterial3D::CULL_BACK);
-			}
+			bool is_transparent = mat->get_albedo().a < 0.95f;
 
 			if (idef->flags & 0x08) {
 				mat->set_blend_mode(BaseMaterial3D::BLEND_MODE_ADD);

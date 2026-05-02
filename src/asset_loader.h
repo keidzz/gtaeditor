@@ -57,6 +57,9 @@ public:
 	/// Mutex for protecting caches and Godot resource creation.
 	Ref<Mutex> cache_mutex;
 
+	/// Global debug logging flag
+	bool debug_enabled = false;
+
 	// ── Direct cache access (use when ALREADY holding cache_mutex) ────────
 	HashMap<String, Ref<ArrayMesh>> mesh_cache;
 	HashMap<String, CachedTexture> texture_cache;

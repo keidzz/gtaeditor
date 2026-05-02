@@ -9,6 +9,8 @@
 #include "streamed_mesh.h"
 
 #include <godot_cpp/classes/camera3d.hpp>
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -57,6 +59,16 @@ public:
 	int get_spawns_per_frame_limit() const;
 	void set_spawns_per_frame_limit(int p_limit);
 
+	/// Enable global debug features (prints, UI).
+	bool debug_enabled = false;
+
+	float debug_label_distance = 100.0f;
+	float get_debug_label_distance() const;
+	void set_debug_label_distance(float p_dist);
+
+	bool get_debug_enabled() const;
+	void set_debug_enabled(bool p_enabled);
+
 protected:
 	static void _bind_methods();
 
@@ -70,6 +82,7 @@ private:
 	// ── Scene nodes ──────────────────────────────────────────────────────
 	Node3D *map_root = nullptr;
 	Camera3D *camera = nullptr;
+	CanvasLayer *debug_canvas = nullptr;
 
 	// ── Spatial grid ─────────────────────────────────────────────────────
 	struct CellCoord {

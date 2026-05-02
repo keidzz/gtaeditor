@@ -27,7 +27,9 @@ void AssetLoader::initialize() {
 		gta_path = OS::get_singleton()->get_executable_path().get_base_dir() + "/";
 	}
 
-	UtilityFunctions::print("GTA path: " + gta_path);
+	if (debug_enabled) {
+		UtilityFunctions::print("GTA path: " + gta_path);
+	}
 	load_cd_image("models/gta3.img");
 	initialized = true;
 }
@@ -60,7 +62,9 @@ void AssetLoader::load_cd_image(const String &path) {
 	}
 
 	file->close();
-	UtilityFunctions::print("Loaded " + String::num_int64(entry_count) + " assets from " + path);
+	if (debug_enabled) {
+		UtilityFunctions::print("Loaded " + String::num_int64(entry_count) + " assets from " + path);
+	}
 }
 
 Ref<FileAccess> AssetLoader::open(const String &path) {
