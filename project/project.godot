@@ -24,6 +24,10 @@ config/icon="res://icon.svg"
 
 DebugMenu="*uid://cggqb75a8w8r"
 
+[display]
+
+window/vsync/vsync_mode=0
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/sky_3d/plugin.cfg", "res://addons/tessarakkt.oceanfft/plugin.cfg")
