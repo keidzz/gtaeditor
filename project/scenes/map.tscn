@@ -69,8 +69,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.44562626, 0.44562626)
-shader_parameter/cirrus_position2 = Vector2(0.44562626, 0.44562626)
+shader_parameter/cirrus_position1 = Vector2(0.26403853, 0.26403853)
+shader_parameter/cirrus_position2 = Vector2(0.26403853, 0.26403853)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -80,7 +80,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(2.228037, 2.228037)
+shader_parameter/cumulus_position = Vector2(1.3200997, 1.3200997)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -187,6 +187,4 @@ ranges = Array[float]([250.0, 500.0, 1900.0, 3800.0, 7600.0, 15200.0, 30400.0, 6
 material = ExtResource("14_c00ee")
 
 [node name="MapBuilder" type="MapBuilder" parent="." unique_id=744991882]
-streaming_distance = 1000.0
-draw_distance_multiplier = 1.5
-spawns_per_frame_limit = 40
+spawns_per_frame_limit = 30

@@ -21,6 +21,8 @@ struct ItemPlacement {
 	int lod_child_index = -1;
 	/// Whether this placement is a LOD model (low-detail version).
 	bool is_lod = false;
+	/// Cached streaming distance for fast O(1) loop lookups.
+	float draw_distance_cache = -1.0f;
 };
 
 #endif // GTAEDITOR_ITEM_PLACEMENT_H

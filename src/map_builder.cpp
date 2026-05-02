@@ -35,10 +35,20 @@ void MapBuilder::_bind_methods() {
 }
 
 float MapBuilder::get_streaming_distance() const { return streaming_distance; }
-void MapBuilder::set_streaming_distance(float p_dist) { streaming_distance = p_dist; }
+void MapBuilder::set_streaming_distance(float p_dist) { 
+	streaming_distance = p_dist; 
+	for (int i = 0; i < placements.size(); i++) {
+		placements[i]->draw_distance_cache = -1.0f;
+	}
+}
 
 float MapBuilder::get_draw_distance_multiplier() const { return draw_distance_multiplier; }
-void MapBuilder::set_draw_distance_multiplier(float p_mult) { draw_distance_multiplier = p_mult; }
+void MapBuilder::set_draw_distance_multiplier(float p_mult) { 
+	draw_distance_multiplier = p_mult; 
+	for (int i = 0; i < placements.size(); i++) {
+		placements[i]->draw_distance_cache = -1.0f;
+	}
+}
 
 int MapBuilder::get_spawns_per_frame_limit() const { return spawns_per_frame_limit; }
 void MapBuilder::set_spawns_per_frame_limit(int p_limit) { spawns_per_frame_limit = p_limit; }
@@ -224,62 +234,46 @@ void MapBuilder::_process(double p_delta) {
 
 	// ── Step 1: Poll loading meshes ──────────────────────────────────────
 	// Only iterate meshes that are actively loading (not all instances).
+	int meshes_applied_this_frame = 0;
 	for (int i = loading_meshes.size() - 1; i >= 0; i--) {
+		if (meshes_applied_this_frame >= 2) {
+			break; // Limit GPU uploads per frame to avoid spikes
+		}
+		
 		auto &pair = loading_meshes[i];
 		StreamedMesh *sm = pair.second;
+		
 		if (sm != nullptr && sm->poll_loading()) {
-			// Loading complete — mark as loaded for LOD visibility ONLY if still active
+			meshes_applied_this_frame++;
+			
+			// Mark as loaded for LOD visibility ONLY if still active
 			if (sm->is_mesh_loaded() && active_instances.has(pair.first)) {
 				loaded_instances.insert(pair.first);
+
+				// Hide LOD child retroactively now that HD parent is loaded
+				int hd_idx = pair.first;
+				int lod_idx = placements[hd_idx]->lod_child_index;
+				if (lod_idx != -1 && active_instances.has(lod_idx)) {
+					Node3D *lod_instance = active_instances[lod_idx];
+					lod_instance->set_visible(false);
+					lod_instance->set_process_mode(Node::PROCESS_MODE_DISABLED);
+					active_instances.erase(lod_idx);
+					loaded_instances.erase(lod_idx);
+					hidden_instances.insert(lod_idx, lod_instance);
+					hidden_lru.push_back(lod_idx);
+				}
 			}
 			loading_meshes.remove_at(i);
 		}
 	}
 
-	// ── Step 1b: Retroactively hide LODs whose HD parent just loaded ─────
-	// This is critical: a LOD may have been spawned while its HD parent was
-	// still loading. Now that the parent is loaded, the LOD must be hidden.
-	// (Matches SanAndreasUnity's StaticGeometry.UpdateVisibility() pattern)
-	{
-		Vector<int> lods_to_hide;
-		for (auto &kv : active_instances) {
-			int idx = kv.key;
-			const auto &placement = placements[idx];
-			if (placement->is_lod && lod_to_parents.has(idx)) {
-				const Vector<int> &parents = lod_to_parents[idx];
-				bool any_parent_loaded = false;
-				for (int p = 0; p < parents.size(); p++) {
-					if (loaded_instances.has(parents[p])) {
-						any_parent_loaded = true;
-						break;
-					}
-				}
-				if (any_parent_loaded) {
-					lods_to_hide.push_back(idx);
-				}
-			}
-		}
-		for (int i = 0; i < lods_to_hide.size(); i++) {
-			int idx = lods_to_hide[i];
-			if (active_instances.has(idx)) {
-				Node3D *instance = active_instances[idx];
-				instance->set_visible(false);
-				active_instances.erase(idx);
-				loaded_instances.erase(idx);
-				hidden_instances.insert(idx, instance);
-				hidden_lru.push_back(idx);
-			}
-		}
-	}
-
 	// ── Step 2: Spawn in-range placements ────────────────────────────────
-	bool printed_debug = false;
 	for (int t = 0; t < grid_tiers.size(); t++) {
 		auto &tier = grid_tiers[t];
 
-		// Use the tier's max distance capped by the global streaming distance limit
+		// Use the tier's max distance multiplied by the user's setting, capped by the global streaming distance limit
 		// (LODs can use up to 3x streaming distance)
-		float check_dist = tier.max_distance;
+		float check_dist = tier.max_distance * draw_distance_multiplier;
 		if (t == 0)
 			check_dist = MIN(check_dist, streaming_distance);
 		else
@@ -303,11 +297,6 @@ void MapBuilder::_process(double p_delta) {
 
 					bool is_active = active_instances.has(idx);
 					bool is_hidden = hidden_instances.has(idx);
-
-					if (!printed_debug && is_active) {
-						UtilityFunctions::print("Active ID ", placement->id, " draw_dist: ", draw_dist);
-						printed_debug = true;
-					}
 
 					if (distance < draw_dist && !is_active) {
 						// ── LOD visibility rule (like SanAndreasUnity) ───────
@@ -336,6 +325,7 @@ void MapBuilder::_process(double p_delta) {
 						if (is_hidden) {
 							Node3D *instance = hidden_instances[idx];
 							instance->set_visible(true);
+							instance->set_process_mode(Node::PROCESS_MODE_INHERIT);
 							active_instances.insert(idx, instance);
 							hidden_instances.erase(idx);
 							hidden_lru.erase(idx);
@@ -343,6 +333,18 @@ void MapBuilder::_process(double p_delta) {
 							StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
 							if (sm != nullptr && sm->is_mesh_loaded()) {
 								loaded_instances.insert(idx);
+
+								// Hide LOD child since HD parent is now fully visible again
+								int lod_idx = placement->lod_child_index;
+								if (lod_idx != -1 && active_instances.has(lod_idx)) {
+									Node3D *lod_instance = active_instances[lod_idx];
+									lod_instance->set_visible(false);
+									lod_instance->set_process_mode(Node::PROCESS_MODE_DISABLED);
+									active_instances.erase(lod_idx);
+									loaded_instances.erase(lod_idx);
+									hidden_instances.insert(lod_idx, lod_instance);
+									hidden_lru.push_back(lod_idx);
+								}
 							}
 							spawns_this_frame++;
 							
@@ -375,6 +377,7 @@ void MapBuilder::_process(double p_delta) {
 						// ── Hide instead of destroy ──────────────────────────
 						Node3D *instance = active_instances[idx];
 						instance->set_visible(false);
+						instance->set_process_mode(Node::PROCESS_MODE_DISABLED);
 						active_instances.erase(idx);
 						loaded_instances.erase(idx);
 						hidden_instances.insert(idx, instance);
@@ -398,6 +401,7 @@ void MapBuilder::_process(double p_delta) {
 
 		if (distance > unload_dist) {
 			kv.value->set_visible(false);
+			kv.value->set_process_mode(Node::PROCESS_MODE_DISABLED);
 			hidden_instances.insert(kv.key, kv.value);
 			hidden_lru.push_back(kv.key);
 			to_remove.push_back(kv.key);
@@ -415,18 +419,27 @@ void MapBuilder::_process(double p_delta) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 float MapBuilder::_get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) const {
+	if (pl->draw_distance_cache >= 0.0f) {
+		return pl->draw_distance_cache;
+	}
+
+	float dist = streaming_distance;
 	if (items.has(pl->id)) {
 		float dd = items[pl->id]->render_distance * draw_distance_multiplier;
 		if (dd > 0.0f) {
 			if (pl->is_lod) {
 				// LOD models are cheap — allow up to 3x streaming distance
-				return MIN(dd, streaming_distance * 3.0f);
+				dist = MIN(dd, streaming_distance * 3.0f);
+			} else {
+				// HD models: respect game's draw distance capped to streaming_distance
+				dist = MIN(dd, streaming_distance);
 			}
-			// HD models: respect game's draw distance capped to streaming_distance
-			return MIN(dd, streaming_distance);
 		}
 	}
-	return streaming_distance;
+	
+	// We need to const_cast to cache the value since the method is const
+	const_cast<ItemPlacement*>(pl.get())->draw_distance_cache = dist;
+	return dist;
 }
 
 void MapBuilder::_build_spatial_grid() {
