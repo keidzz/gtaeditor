@@ -1,28 +1,31 @@
-#ifndef GTAEDITOR_ITEM_PLACEMENT_H
-#define GTAEDITOR_ITEM_PLACEMENT_H
+#ifndef ITEM_PLACEMENT_H
+#define ITEM_PLACEMENT_H
 
 #include <godot_cpp/variant/quaternion.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 
-/// Represents a placed instance of an item definition in the GTA world.
-/// Parsed from IPL (Item Placement List) files - both text and binary formats.
+using namespace godot;
+
+// =============================================================================
+// ItemPlacement — A single object instance in the world, parsed from IPL files.
+// Positions and rotations are already converted to Godot's coordinate system
+// during parsing.
+//
+// Coordinate conversion (applied during IPL parsing):
+//   Godot position = (GTA.x, GTA.z, -GTA.y)
+//   Godot quaternion = (-GTA.rx, -GTA.rz, -GTA.ry, GTA.rw)
+// =============================================================================
+
 struct ItemPlacement {
-	int id = 0;
-	godot::String model_name;
-	int interior = 0;
-	godot::Vector3 position;
-	godot::Vector3 scale = godot::Vector3(1.0f, 1.0f, 1.0f);
-	godot::Quaternion rotation;
-	/// Index into this IPL group of the LOD (low-detail) child for this placement.
-/// -1 = this placement has no LOD child.
-/// Populated during parse; only meaningful before LOD-linking pass runs.
-	int lod_index = -1;
-	/// Index of the LOD child (lower-detail version) of this placement (-1 = none).
-	/// Populated after all placements are loaded by the LOD linking pass.
-	int lod_child_index = -1;
-	/// Whether this placement is a LOD model (low-detail version).
-	bool is_lod = false;
+	int32_t definition_id = 0;  // Links to ItemDefinition.id
+	String item_name;           // Model name from IPL (or "streaming" for binary)
+	Vector3 position;           // World position (Godot coordinates)
+	Quaternion rotation;        // World rotation (Godot coordinates)
+	int32_t interior = 0;       // Interior ID (0 = exterior)
+	int32_t lod_index = -1;     // Index into placement array for LOD version
+	float lod_begin_distance = -1.0f; // Minimum distance at which this LOD model becomes visible
+	float draw_distance = 300.0f;     // Cached draw distance from definition
 };
 
-#endif // GTAEDITOR_ITEM_PLACEMENT_H
+#endif // ITEM_PLACEMENT_H

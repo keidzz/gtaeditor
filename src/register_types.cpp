@@ -1,6 +1,5 @@
 #include "register_types.h"
 #include "map_builder.h"
-#include "streamed_mesh.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -14,11 +13,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-	// Register all C++ classes that need to be visible in the Godot editor.
-	// MapBuilder: the main node placed in scenes to load the GTA world.
 	ClassDB::register_class<MapBuilder>();
-	ClassDB::register_class<StreamedMesh>();
-	ClassDB::register_class<MeshLoadTaskData>();
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

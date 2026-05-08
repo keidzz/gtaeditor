@@ -34,9 +34,7 @@ enabled=PackedStringArray("res://addons/debug_menu/plugin.cfg", "res://addons/sk
 
 [rendering]
 
-anti_aliasing/quality/msaa_3d=1
-limits/global_shader_variables/buffer_size=1048576
-limits/opengl/max_renderable_elements=131072
-limits/opengl/max_renderable_lights=4096
-limits/shader_parameters/max_instances=65536
-vrs/quality/msaa_3d=0
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=4
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_roughness_limiter_enabled=true

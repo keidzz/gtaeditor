@@ -1,434 +1,616 @@
 #include "map_builder.h"
-#include "asset_loader.h"
 
-#include <godot_cpp/templates/hash_set.hpp>
-
-#include <godot_cpp/classes/box_shape3d.hpp>
 #include <godot_cpp/classes/collision_shape3d.hpp>
-#include <godot_cpp/classes/concave_polygon_shape3d.hpp>
-#include <godot_cpp/classes/file_access.hpp>
-#include <godot_cpp/classes/light3d.hpp>
-#include <godot_cpp/classes/omni_light3d.hpp>
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
-using namespace godot;
+#include "classes/water_parser.h"
 
-// ── Construction ─────────────────────────────────────────────────────────────
+#include <algorithm>
+
+namespace godot {
+
+// =============================================================================
+// Constructor / Destructor
+// =============================================================================
 
 MapBuilder::MapBuilder() {}
-MapBuilder::~MapBuilder() {}
-
-void MapBuilder::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_streaming_distance"), &MapBuilder::get_streaming_distance);
-	ClassDB::bind_method(D_METHOD("set_streaming_distance", "distance"), &MapBuilder::set_streaming_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "streaming_distance"), "set_streaming_distance", "get_streaming_distance");
-
-	ClassDB::bind_method(D_METHOD("get_draw_distance_multiplier"), &MapBuilder::get_draw_distance_multiplier);
-	ClassDB::bind_method(D_METHOD("set_draw_distance_multiplier", "multiplier"), &MapBuilder::set_draw_distance_multiplier);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "draw_distance_multiplier"), "set_draw_distance_multiplier", "get_draw_distance_multiplier");
-
-	ClassDB::bind_method(D_METHOD("get_spawns_per_frame_limit"), &MapBuilder::get_spawns_per_frame_limit);
-	ClassDB::bind_method(D_METHOD("set_spawns_per_frame_limit", "limit"), &MapBuilder::set_spawns_per_frame_limit);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "spawns_per_frame_limit"), "set_spawns_per_frame_limit", "get_spawns_per_frame_limit");
-
-	ClassDB::bind_method(D_METHOD("get_debug_enabled"), &MapBuilder::get_debug_enabled);
-	ClassDB::bind_method(D_METHOD("set_debug_enabled", "enabled"), &MapBuilder::set_debug_enabled);
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_enabled"), "set_debug_enabled", "get_debug_enabled");
-
-	ClassDB::bind_method(D_METHOD("get_debug_label_distance"), &MapBuilder::get_debug_label_distance);
-	ClassDB::bind_method(D_METHOD("set_debug_label_distance", "distance"), &MapBuilder::set_debug_label_distance);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "debug_label_distance"), "set_debug_label_distance", "get_debug_label_distance");
+MapBuilder::~MapBuilder() {
+	models.clear();
+	textures.clear();
+	spawned_nodes.clear();
 }
 
-float MapBuilder::get_streaming_distance() const { return streaming_distance; }
-void MapBuilder::set_streaming_distance(float p_dist) { streaming_distance = p_dist; }
-
-float MapBuilder::get_draw_distance_multiplier() const { return draw_distance_multiplier; }
-void MapBuilder::set_draw_distance_multiplier(float p_mult) { draw_distance_multiplier = p_mult; }
-
-int MapBuilder::get_spawns_per_frame_limit() const { return spawns_per_frame_limit; }
-void MapBuilder::set_spawns_per_frame_limit(int p_limit) { spawns_per_frame_limit = p_limit; }
-
-bool MapBuilder::get_debug_enabled() const { return debug_enabled; }
-void MapBuilder::set_debug_enabled(bool p_enabled) {
-	debug_enabled = p_enabled;
-	AssetLoader::get().debug_enabled = p_enabled;
-}
-
-float MapBuilder::get_debug_label_distance() const { return debug_label_distance; }
-void MapBuilder::set_debug_label_distance(float p_dist) { debug_label_distance = p_dist; }
-
-// ── Initialization ───────────────────────────────────────────────────────────
+// =============================================================================
+// Godot lifecycle — everything loads in _ready(), no _process() streaming
+// =============================================================================
 
 void MapBuilder::_ready() {
-	// ── Setup debug UI ───────────────────────────────────────────────────
-	debug_canvas = memnew(CanvasLayer);
-	debug_canvas->set_layer(100);
-	add_child(debug_canvas);
+	// Don't load the map in the editor — only when running the game.
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+	load_map();
+}
 
-	AssetLoader::get().initialize();
-	const String &gta_path = AssetLoader::get().get_gta_path();
+void MapBuilder::_process(double delta) {
+	if (Engine::get_singleton()->is_editor_hint())
+		return;
+	if (!loaded)
+		return;
 
-	Ref<FileAccess> dat = FileAccess::open(gta_path + String("data/gta.dat"), FileAccess::READ);
-	ERR_FAIL_COND_MSG(dat.is_null(), "Failed to open gta.dat");
+	int placements_count = placements.size();
+	if (placements_count == 0)
+		return;
 
-	while (!dat->eof_reached()) {
-		String line = dat->get_line();
-		if (line.begins_with("#") || line.is_empty())
-			continue;
+	Vector3 cam_pos = Vector3(0, 0, 0);
+	Camera3D *cam = get_viewport()->get_camera_3d();
+	if (cam) {
+		cam_pos = cam->get_global_position();
+	}
 
-		PackedStringArray tokens = line.split(" ", false);
-		if (tokens.size() == 0)
-			continue;
+	int batch_size = 2000;
 
-		String command = tokens[0];
+	uint64_t start_time = Time::get_singleton()->get_ticks_msec();
+	int checked_this_frame = 0;
 
-		if (command == "IDE") {
-			_read_map_data(tokens[1], &MapBuilder::_read_ide_line, "");
-		} else if (command == "COLFILE") {
-			Ref<FileAccess> colfile = AssetLoader::get().open(gta_path + String(tokens[2]));
-			if (colfile.is_valid()) {
-				while (colfile->get_position() < colfile->get_length()) {
-					auto col = std::make_shared<ColFile>();
-					col->parse(colfile);
-					collisions.push_back(col);
+	// Time budget: max ~8ms per frame to maintain >60FPS
+	while (checked_this_frame < batch_size && (Time::get_singleton()->get_ticks_msec() - start_time) < 8) {
+		int i = stream_process_index;
+		const ItemPlacement &placement = placements[i];
+
+		float dist_sq = placement.position.distance_squared_to(cam_pos);
+
+		bool is_lod = placement.lod_begin_distance >= 0.0f;
+		float stream_dist = is_lod ? streaming_distance : MIN(placement.draw_distance * draw_distance_multiplier, streaming_distance);
+		
+		float stream_dist_sq = stream_dist * stream_dist;
+		// Hysteresis to prevent objects from popping in and out at the border
+		float despawn_margin = is_lod ? 100.0f : 50.0f;
+		float despawn_dist_sq = (stream_dist + despawn_margin) * (stream_dist + despawn_margin);
+
+		bool in_range = dist_sq < stream_dist_sq;
+		bool out_of_range = dist_sq > despawn_dist_sq;
+
+		if (in_range && spawned_nodes[i] == nullptr) {
+			if (placement.interior != 0 && !load_interiors) {
+				// Mark as skipped so we don't check again
+				spawned_nodes.write[i] = (MeshInstance3D *)1;
+			} else {
+				MeshInstance3D *instance = spawn_placement(i);
+				if (instance) {
+					add_child(instance);
+					spawned_nodes.write[i] = instance;
+				} else {
+					// Use (MeshInstance3D*)1 as a marker to prevent retrying failed spawns every frame
+					spawned_nodes.write[i] = (MeshInstance3D *)1;
 				}
 			}
-		} else if (command == "IPL") {
-			String ipl_path = tokens[1];
-			String ipl_lower = ipl_path.to_lower();
-
-			if (ipl_lower.contains("interior") || ipl_lower.contains("leveldes"))
-				continue;
-			if (ipl_lower.contains("paths") || ipl_lower.contains("cull") ||
-				ipl_lower.contains("occlu") || ipl_lower.contains("zon"))
-				continue;
-
-			if (debug_enabled) {
-				UtilityFunctions::print("Loading IPL: " + ipl_path);
+		} else if (out_of_range && spawned_nodes[i] != nullptr) {
+			if (spawned_nodes[i] != (MeshInstance3D *)1) {
+				spawned_nodes[i]->queue_free();
 			}
-			_load_ipl_group(ipl_path);
-		} else if (command == "IMG") {
-			String img_path = tokens[1].to_lower();
-			if (img_path.contains("gta3.img")) {
-				AssetLoader::get().load_cd_image(tokens[1]);
-			}
+			spawned_nodes.write[i] = nullptr;
 		}
-	}
 
-	// ── Link 2DFX children to parent items ───────────────────────────────
-	for (int i = 0; i < item_children.size(); i++) {
-		int parent_id = item_children[i]->parent;
-		if (items.has(parent_id)) {
-			items[parent_id]->children.push_back(item_children[i]);
-		}
-	}
-
-	// ── Link collision files to items ────────────────────────────────────
-	for (int i = 0; i < collisions.size(); i++) {
-		const auto &col = collisions[i];
-		if (items.has(col->model_id)) {
-			items[col->model_id]->colfile = col;
-		} else {
-			for (auto &kv : items) {
-				if (kv.value->model_name.matchn(col->model_name)) {
-					kv.value->colfile = col;
-					break;
-				}
-			}
-		}
-	}
-
-	// ── Build spatial grid and map ───────────────────────────────────────
-	_build_spatial_grid();
-	_clear_map();
-	call_deferred("add_child", map_root);
-
-	int lod_count = 0, hd_count = 0;
-	for (int i = 0; i < placements.size(); i++) {
-		if (placements[i]->is_lod)
-			lod_count++;
-		else
-			hd_count++;
-	}
-	if (debug_enabled) {
-		UtilityFunctions::print("Loaded " + String::num_int64(placements.size()) +
-								" placements (" + String::num_int64(hd_count) + " HD, " +
-								String::num_int64(lod_count) + " LOD, " +
-								String::num_int64(lod_to_parents.size()) + " LOD links)");
+		stream_process_index = (stream_process_index + 1) % placements_count;
+		checked_this_frame++;
 	}
 }
 
-// ── Per-frame streaming ──────────────────────────────────────────────────────
+// =============================================================================
+// Loading pipeline
+// =============================================================================
 
-void MapBuilder::_process(double p_delta) {
-	if (camera == nullptr) {
-		Viewport *vp = get_viewport();
-		if (vp != nullptr) {
-			camera = vp->get_camera_3d();
+void MapBuilder::load_map() {
+	if (loaded)
+		return;
+
+	// Resolve GTA path to absolute.
+	String abs_gta_path;
+	if (gta_path.begins_with("res://")) {
+		abs_gta_path = ProjectSettings::get_singleton()->globalize_path(gta_path);
+	} else {
+		abs_gta_path = gta_path;
+	}
+
+	if (!abs_gta_path.ends_with("/")) {
+		abs_gta_path += "/";
+	}
+
+	path_resolver.set_root(abs_gta_path);
+
+	if (debug_enabled) {
+		UtilityFunctions::print("[MapBuilder] GTA path: ", abs_gta_path);
+	}
+
+	// 1. Load IMG archive (models/gta3.img).
+	String img_path = path_resolver.resolve("models/gta3.img");
+	if (img_path.is_empty()) {
+		UtilityFunctions::printerr("[MapBuilder] Could not find models/gta3.img");
+		return;
+	}
+	img_archive.load(img_path);
+
+	// 2. Parse default.dat.
+	String default_dat_path = path_resolver.resolve("data/default.dat");
+	if (!default_dat_path.is_empty()) {
+		load_dat_file(default_dat_path);
+	}
+
+	// 3. Parse gta.dat.
+	String gta_dat_path = path_resolver.resolve("data/gta.dat");
+	if (!gta_dat_path.is_empty()) {
+		load_dat_file(gta_dat_path);
+	}
+
+	// 4. Load streaming binary IPLs from IMG.
+	load_streaming_ipls();
+
+	// 5. Resolve LOD links.
+	resolve_lods();
+
+	// 6. Index all DFF/TXD entries from IMG.
+	index_img_assets();
+
+	// 7. Load water if enabled.
+	if (load_water) {
+		String water_path = path_resolver.resolve("data/water.dat");
+		if (!water_path.is_empty()) {
+			Vector<WaterPlane> water_planes = WaterParser::parse(water_path);
+			if (water_planes.size() > 0) {
+				PackedVector3Array vertices;
+				PackedInt32Array indices;
+				int idx = 0;
+				for (int i = 0; i < water_planes.size(); i++) {
+					const WaterPlane &wp = water_planes[i];
+					if (wp.is_triangle) {
+						vertices.push_back(wp.p1);
+						vertices.push_back(wp.p2);
+						vertices.push_back(wp.p3);
+						indices.push_back(idx++);
+						indices.push_back(idx++);
+						indices.push_back(idx++);
+					} else {
+						vertices.push_back(wp.p1);
+						vertices.push_back(wp.p2);
+						vertices.push_back(wp.p3);
+						vertices.push_back(wp.p4);
+						indices.push_back(idx);
+						indices.push_back(idx + 1);
+						indices.push_back(idx + 2);
+						indices.push_back(idx + 2);
+						indices.push_back(idx + 3);
+						indices.push_back(idx);
+						idx += 4;
+					}
+				}
+
+				Array arrays;
+				arrays.resize(Mesh::ARRAY_MAX);
+				arrays[Mesh::ARRAY_VERTEX] = vertices;
+				arrays[Mesh::ARRAY_INDEX] = indices;
+
+				Ref<ArrayMesh> water_mesh;
+				water_mesh.instantiate();
+				water_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+
+				Ref<StandardMaterial3D> water_mat;
+				water_mat.instantiate();
+				water_mat->set_albedo(Color(0.2f, 0.4f, 0.8f, 0.6f));
+				water_mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+				water_mesh->surface_set_material(0, water_mat);
+
+				MeshInstance3D *water_instance = memnew(MeshInstance3D);
+				water_instance->set_mesh(water_mesh);
+				water_instance->set_name("WaterPlanes");
+				add_child(water_instance);
+
+				if (debug_enabled) {
+					UtilityFunctions::print("[MapBuilder] Loaded ", water_planes.size(), " water planes");
+				}
+			}
 		}
+	}
+
+	loaded = true;
+
+	if (debug_enabled) {
+		UtilityFunctions::print("[MapBuilder] ===== Loading Complete =====");
+		UtilityFunctions::print("[MapBuilder]   Definitions: ", definitions.size());
+		UtilityFunctions::print("[MapBuilder]   Placements:  ", placements.size());
+		UtilityFunctions::print("[MapBuilder]   Models:      ", models.get_model_count());
+		UtilityFunctions::print("[MapBuilder]   Textures:    ", textures.get_txd_count());
+		UtilityFunctions::print("[MapBuilder] ==============================");
+	}
+
+	// Make loading instant: sort placements by distance to the initial camera, so nearby objects are at the start of the array
+	// and get checked first by the streaming system.
+	Vector3 start_pos = Vector3(0, 0, 0);
+	Camera3D *cam = get_viewport()->get_camera_3d();
+	if (cam) {
+		start_pos = cam->get_global_position();
+	}
+
+	ItemPlacement *ptr = placements.ptrw();
+	std::sort(ptr, ptr + placements.size(), [start_pos](const ItemPlacement &a, const ItemPlacement &b) {
+		return a.position.distance_squared_to(start_pos) < b.position.distance_squared_to(start_pos);
+	});
+
+	// 7. Initialize streaming system
+	spawned_nodes.resize(placements.size());
+	spawned_nodes.fill(nullptr);
+
+	if (debug_enabled) {
+		UtilityFunctions::print("[MapBuilder] Ready for dynamic streaming (", placements.size(), " placements)");
+	}
+}
+
+void MapBuilder::load_dat_file(const String &p_dat_path) {
+	DatResult dat = DatParser::parse(p_dat_path);
+
+	// Load IDEs.
+	for (int i = 0; i < dat.ide_paths.size(); i++) {
+		load_ide_file(dat.ide_paths[i]);
+	}
+
+	// Load text IPLs and their streaming binary counterparts.
+	// LOD resolution is per-region: each text IPL + its _stream{N} IPLs
+	// form a region, and LOD indices are resolved within that combined list.
+	for (int i = 0; i < dat.ipl_paths.size(); i++) {
+		String ipl_path = dat.ipl_paths[i];
+
+		// Track the start index in our global placements array.
+		int region_start = placements.size();
+
+		// Load text IPL.
+		load_text_ipl(ipl_path);
+
+		// Load matching streaming binary IPLs: {basename}_stream{0}.ipl, {1}, etc.
+		String clean_path = ipl_path.replace("\\", "/");
+		String basename = clean_path.get_file().get_basename().to_lower();
+
+		for (int stream_idx = 0;; stream_idx++) {
+			String stream_name = basename + "_stream" + String::num_int64(stream_idx) + ".ipl";
+
+			if (!img_archive.has_entry(stream_name)) {
+				break;
+			}
+
+			PackedByteArray data = img_archive.read_entry(stream_name);
+			if (data.size() < 4)
+				break;
+
+			// Check for binary magic.
+			if (data[0] != 'b' || data[1] != 'n' || data[2] != 'r' || data[3] != 'y') {
+				break;
+			}
+
+			Vector<ItemPlacement> stream_placements = IplParser::parse_binary(data);
+
+			// Fill in model names and draw distances from definitions.
+			for (int j = 0; j < stream_placements.size(); j++) {
+				int32_t def_id = stream_placements[j].definition_id;
+				if (definitions.has(def_id)) {
+					stream_placements.ptrw()[j].item_name = definitions[def_id].model_name.to_lower();
+					stream_placements.ptrw()[j].draw_distance = definitions[def_id].draw_distance;
+				}
+			}
+
+			placements.append_array(stream_placements);
+		}
+
+		int region_end = placements.size();
+
+		// Resolve LOD indices within this region.
+		for (int idx = region_start; idx < region_end; idx++) {
+			int32_t lod_idx = placements[idx].lod_index;
+			if (lod_idx >= 0) {
+				// LOD index is relative to this region's combined placement list.
+				int32_t global_lod_idx = region_start + lod_idx;
+				if (global_lod_idx < region_end) {
+					int32_t def_id = placements[idx].definition_id;
+					float hd_dist = definitions.has(def_id) ? definitions[def_id].draw_distance * draw_distance_multiplier : streaming_distance;
+
+					if (placements[global_lod_idx].lod_begin_distance < 0.0f) {
+						placements.ptrw()[global_lod_idx].lod_begin_distance = hd_dist;
+					} else {
+						// If multiple HD models reference the same LOD, use the max distance so the LOD
+						// doesn't pop in too early while some HD models are still visible.
+						placements.ptrw()[global_lod_idx].lod_begin_distance = MAX(placements[global_lod_idx].lod_begin_distance, hd_dist);
+					}
+				}
+			}
+		}
+	}
+
+	// We stream the placements dynamically, so we don't need to sort them here.
+}
+
+void MapBuilder::load_ide_file(const String &p_ide_path) {
+	String resolved = path_resolver.resolve(p_ide_path);
+	if (resolved.is_empty()) {
 		return;
 	}
 
-	if (debug_canvas) {
-		debug_canvas->set_visible(debug_enabled);
+	IdeResult result = IdeParser::parse(resolved);
+
+	// Merge definitions.
+	for (const KeyValue<int32_t, ItemDefinition> &kv : result.definitions) {
+		definitions[kv.key] = kv.value;
 	}
 
-	Vector3 cam_pos = camera->get_global_position();
-	int spawns_this_frame = 0;
-
-	// ── Step 1: Poll loading meshes ──────────────────────────────────────
-	// Only iterate meshes that are actively loading (not all instances).
-	for (int i = loading_meshes.size() - 1; i >= 0; i--) {
-		auto &pair = loading_meshes[i];
-		StreamedMesh *sm = pair.second;
-		if (sm != nullptr && sm->poll_loading()) {
-			// Loading complete — mark as loaded for LOD visibility ONLY if still active
-			if (sm->is_mesh_loaded() && active_instances.has(pair.first)) {
-				loaded_instances.insert(pair.first);
-			}
-			loading_meshes.remove_at(i);
-		}
-	}
-
-	// ── Step 1b: Retroactively hide LODs whose HD parent just loaded ─────
-	// This is critical: a LOD may have been spawned while its HD parent was
-	// still loading. Now that the parent is loaded, the LOD must be hidden.
-	// (Matches SanAndreasUnity's StaticGeometry.UpdateVisibility() pattern)
-	{
-		Vector<int> lods_to_hide;
-		for (auto &kv : active_instances) {
-			int idx = kv.key;
-			const auto &placement = placements[idx];
-			if (placement->is_lod && lod_to_parents.has(idx)) {
-				const Vector<int> &parents = lod_to_parents[idx];
-				bool any_parent_loaded = false;
-				for (int p = 0; p < parents.size(); p++) {
-					if (loaded_instances.has(parents[p])) {
-						any_parent_loaded = true;
-						break;
-					}
-				}
-				if (any_parent_loaded) {
-					lods_to_hide.push_back(idx);
-				}
-			}
-		}
-		for (int i = 0; i < lods_to_hide.size(); i++) {
-			int idx = lods_to_hide[i];
-			if (active_instances.has(idx)) {
-				Node3D *instance = active_instances[idx];
-				instance->set_visible(false);
-				active_instances.erase(idx);
-				loaded_instances.erase(idx);
-				hidden_instances.insert(idx, instance);
-				hidden_lru.push_back(idx);
-			}
-		}
-	}
-
-	// ── Step 2: Spawn in-range placements ────────────────────────────────
-	bool printed_debug = false;
-	for (int t = 0; t < grid_tiers.size(); t++) {
-		auto &tier = grid_tiers[t];
-
-		// Use the tier's max distance capped by the global streaming distance limit
-		// (LODs can use up to 3x streaming distance)
-		float check_dist = tier.max_distance;
-		if (t == 0)
-			check_dist = MIN(check_dist, streaming_distance);
-		else
-			check_dist = MIN(check_dist, streaming_distance * 3.0f);
-
-		int cell_radius = static_cast<int>(Math::ceil(check_dist / tier.cell_size)) + 1;
-		CellCoord cam_cell = _cell_for_position(cam_pos, tier.cell_size);
-
-		for (int cx = cam_cell.x - cell_radius; cx <= cam_cell.x + cell_radius; cx++) {
-			for (int cz = cam_cell.z - cell_radius; cz <= cam_cell.z + cell_radius; cz++) {
-				CellCoord cell = { cx, cz };
-				if (!tier.cells.has(cell))
-					continue;
-
-				const Vector<int> &cell_placements = tier.cells[cell];
-				for (int i = 0; i < cell_placements.size(); i++) {
-					int idx = cell_placements[i];
-					const auto &placement = placements[idx];
-					float distance = cam_pos.distance_to(placement->position);
-					float draw_dist = _get_draw_distance(placement);
-
-					bool is_active = active_instances.has(idx);
-					bool is_hidden = hidden_instances.has(idx);
-
-					if (debug_enabled && !printed_debug && is_active) {
-						UtilityFunctions::print("Active ID ", placement->id, " draw_dist: ", draw_dist);
-						printed_debug = true;
-					}
-
-					if (distance < draw_dist && !is_active) {
-						// ── LOD visibility rule (like SanAndreasUnity) ───────
-						// A LOD model is visible ONLY when its HD parent has
-						// a LOADED mesh (not just spawned).
-						if (placement->is_lod) {
-							if (lod_to_parents.has(idx)) {
-								const Vector<int> &parents = lod_to_parents[idx];
-								bool any_parent_loaded = false;
-								for (int p = 0; p < parents.size(); p++) {
-									if (loaded_instances.has(parents[p])) {
-										any_parent_loaded = true;
-										break;
-									}
-								}
-								if (any_parent_loaded) {
-									continue; // HD parent mesh loaded, hide LOD
-								}
-							}
-						}
-
-						if (spawns_this_frame >= spawns_per_frame_limit)
-							continue;
-
-						// ── Try to re-show a hidden instance first ───────────
-						if (is_hidden) {
-							Node3D *instance = hidden_instances[idx];
-							instance->set_visible(true);
-							active_instances.insert(idx, instance);
-							hidden_instances.erase(idx);
-							hidden_lru.erase(idx);
-							// Restore loaded state
-							StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
-							if (sm != nullptr && sm->is_mesh_loaded()) {
-								loaded_instances.insert(idx);
-							}
-							spawns_this_frame++;
-
-							if (debug_enabled && placement->is_lod) {
-								UtilityFunctions::print("LOD model reappeared: ", placement->model_name, " at distance ", distance);
-							}
-							continue;
-						}
-
-						// ── Spawn a new instance ─────────────────────────────
-						bool near = (distance < PHYSICS_DISTANCE);
-						Node3D *instance = _spawn_placement(placement, near);
-						if (instance != nullptr) {
-							map_root->add_child(instance);
-							active_instances.insert(idx, instance);
-
-							// Check if it loaded from cache (immediate)
-							StreamedMesh *sm = Object::cast_to<StreamedMesh>(instance);
-							if (sm != nullptr) {
-								if (sm->is_mesh_loaded()) {
-									loaded_instances.insert(idx);
-								} else if (sm->get_load_state() == StreamedMesh::LOADING) {
-									loading_meshes.push_back({ idx, sm });
-								}
-							}
-						}
-						spawns_this_frame++;
-
-					} else if (distance > draw_dist * UNLOAD_HYSTERESIS && is_active) {
-						// ── Hide instead of destroy ──────────────────────────
-						Node3D *instance = active_instances[idx];
-						instance->set_visible(false);
-						active_instances.erase(idx);
-						loaded_instances.erase(idx);
-						hidden_instances.insert(idx, instance);
-						hidden_lru.push_back(idx);
-
-						if (debug_enabled && !placement->is_lod) {
-							UtilityFunctions::print("HD model unloaded: ", placement->model_name, " at distance ", distance);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// ── Step 3: Cleanup far-away active instances (teleportation) ────────
-	Vector<int> to_remove;
-	for (auto &kv : active_instances) {
-		const auto &placement = placements[kv.key];
-		float distance = cam_pos.distance_to(placement->position);
-		float unload_dist = _get_draw_distance(placement) * UNLOAD_HYSTERESIS;
-
-		if (distance > unload_dist) {
-			kv.value->set_visible(false);
-			hidden_instances.insert(kv.key, kv.value);
-			hidden_lru.push_back(kv.key);
-			to_remove.push_back(kv.key);
-		}
-	}
-	for (int i = 0; i < to_remove.size(); i++) {
-		active_instances.erase(to_remove[i]);
-		loaded_instances.erase(to_remove[i]);
-	}
-
-	// ── Step 4: Evict oldest hidden instances if pool overflows ─────────
-	_evict_hidden_pool();
-
-	// ── Step 5: Debug UI — one floating label per visible HD model ───────
-	if (debug_enabled && camera != nullptr && debug_canvas != nullptr) {
-		// ── Recycle label pool: remove children beyond what we need ──────
-		// We'll reuse existing Label children and create new ones as needed.
-		TypedArray<Node> existing = debug_canvas->get_children();
-
-		int label_index = 0;
-
-		for (auto &kv : active_instances) {
-			const auto &placement = placements[kv.key];
-			if (placement->is_lod)
-				continue;
-
-			if (camera->is_position_behind(placement->position))
-				continue;
-
-			Vector2 screen_pos = camera->unproject_position(placement->position);
-			Rect2 visible_rect = camera->get_viewport()->get_visible_rect();
-			if (!visible_rect.has_point(screen_pos))
-				continue;
-
-			float dist = camera->get_global_position().distance_to(placement->position);
-			// ── Skip labels beyond this distance ─────────────────────────────
-			if (dist > debug_label_distance)
-				continue;
-			// Scale font 18px at 50m → 8px at 300m
-			int font_size = (int)Math::clamp(18.0f - (dist / 300.0f) * 10.0f, 8.0f, 24.0f);
-
-			// ── Get or create a Label for this slot ──────────────────────
-			Label *lbl = nullptr;
-			if (label_index < existing.size()) {
-				lbl = Object::cast_to<Label>(existing[label_index]);
-			}
-			if (lbl == nullptr) {
-				lbl = memnew(Label);
-				// Outline (stroke)
-				lbl->add_theme_color_override("font_outline_color", Color(0, 0, 0, 1));
-				lbl->add_theme_constant_override("outline_size", 3);
-				// Drop shadow — needs an offset so it's actually visible
-				lbl->add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6f));
-				lbl->add_theme_constant_override("shadow_offset_x", 2);
-				lbl->add_theme_constant_override("shadow_offset_y", 2);
-				debug_canvas->add_child(lbl);
-			}
-
-			lbl->set_text(placement->model_name);
-			lbl->add_theme_font_size_override("font_size", font_size);
-			lbl->set_visible(true);
-
-			// Center the label on the projected position
-			lbl->set_position(screen_pos - lbl->get_size() / 2.0f);
-
-			label_index++;
-		}
-
-		// ── Hide unused labels from the pool ─────────────────────────────
-		for (int i = label_index; i < existing.size(); i++) {
-			Label *lbl = Object::cast_to<Label>(existing[i]);
-			if (lbl != nullptr) {
-				lbl->set_visible(false);
-			}
-		}
+	// Register texture parents.
+	for (int i = 0; i < result.texture_parents.size(); i++) {
+		textures.add_parent(result.texture_parents[i].child_name,
+							result.texture_parents[i].parent_name);
 	}
 }
+
+void MapBuilder::load_text_ipl(const String &p_ipl_path) {
+	String resolved = path_resolver.resolve(p_ipl_path);
+	if (resolved.is_empty()) {
+		return;
+	}
+
+	Vector<ItemPlacement> ipl_placements = IplParser::parse_text(resolved);
+
+	for (int i = 0; i < ipl_placements.size(); i++) {
+		int32_t def_id = ipl_placements[i].definition_id;
+		if (definitions.has(def_id)) {
+			ipl_placements.ptrw()[i].draw_distance = definitions[def_id].draw_distance;
+		}
+	}
+
+	if (debug_enabled && !ipl_placements.is_empty()) {
+		UtilityFunctions::print("[MapBuilder] Text IPL: ", p_ipl_path,
+								" -> ", ipl_placements.size(), " placements");
+	}
+
+	placements.append_array(ipl_placements);
+}
+
+void MapBuilder::load_streaming_ipls() {
+	// Streaming IPLs are now loaded per-region in load_dat_file().
+	// This function is kept for any remaining binary IPLs not matched
+	// by the streaming naming convention.
+	if (debug_enabled) {
+		UtilityFunctions::print("[MapBuilder] Streaming IPLs loaded per-region");
+	}
+}
+
+void MapBuilder::resolve_lods() {
+	// LOD resolution is now done per-region in load_dat_file().
+	// This function is kept for compatibility.
+}
+
+void MapBuilder::index_img_assets() {
+	// Register all DFF files from the IMG archive.
+	Vector<String> dff_entries = img_archive.get_entries_with_extension(".dff");
+	for (int i = 0; i < dff_entries.size(); i++) {
+		models.register_dff(dff_entries[i], &img_archive);
+	}
+
+	// Register all TXD files from the IMG archive.
+	Vector<String> txd_entries = img_archive.get_entries_with_extension(".txd");
+	for (int i = 0; i < txd_entries.size(); i++) {
+		textures.register_txd(txd_entries[i], &img_archive);
+	}
+}
+
+// =============================================================================
+// Spawn all placements at once
+// =============================================================================
+
+// spawn_all() is no longer used — spawning is deferred via _process().
+void MapBuilder::spawn_all() {
+	// Kept for compatibility. Batch spawning is handled by _process().
+}
+
+// =============================================================================
+// Spawn a single placement
+// =============================================================================
+
+MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
+	const ItemPlacement &placement = placements[p_index];
+
+	// Look up the item definition.
+	if (!definitions.has(placement.definition_id)) {
+		return nullptr;
+	}
+
+	const ItemDefinition &def = definitions[placement.definition_id];
+
+	// No longer skipping shadow meshes (some buildings are flagged as shadows in GTA SA but we need them).
+
+	// Get the mesh (lazy DFF parse).
+	String model_name = def.model_name.to_lower();
+	Ref<ArrayMesh> mesh = models.get_mesh(model_name);
+	if (mesh.is_null() || mesh->get_surface_count() == 0) {
+		return nullptr;
+	}
+
+	// Get material info.
+	Vector<DffMaterial> materials = models.get_materials(model_name);
+
+	// Create the MeshInstance3D.
+	MeshInstance3D *instance = memnew(MeshInstance3D);
+	instance->set_mesh(mesh);
+	instance->set_position(placement.position);
+	instance->set_quaternion(placement.rotation);
+
+	bool is_lod = placement.lod_begin_distance >= 0.0f;
+
+	// Add static collision body if enabled (only for HD models, skip LODs)
+	if (load_collisions && !is_lod) {
+		Ref<ConcavePolygonShape3D> col_shape = models.get_col_shape(model_name);
+		if (col_shape.is_valid()) {
+			StaticBody3D *body = memnew(StaticBody3D);
+			CollisionShape3D *col = memnew(CollisionShape3D);
+			col->set_shape(col_shape);
+			body->add_child(col);
+			instance->add_child(body);
+		}
+	}
+
+	// Set visibility range for automatic distance culling.
+	if (is_lod) {
+		// This is a LOD model referenced by an HD model.
+		// It only becomes visible when the HD model disappears!
+		// Crucially, it has NO visibility_range_end, so it stays visible to infinity.
+		float begin_dist = placement.lod_begin_distance;
+		instance->set_visibility_range_begin(begin_dist);
+		instance->set_visibility_range_begin_margin(begin_dist * 0.1f);
+		// Disable shadows on LODs to greatly improve performance when looking at the city from afar.
+		instance->set_cast_shadows_setting(GeometryInstance3D::SHADOW_CASTING_SETTING_OFF);
+	} else {
+		// This is a standard/HD model. It disappears at its draw distance.
+		float vis_end = def.draw_distance * draw_distance_multiplier;
+		if (vis_end < streaming_distance) {
+			instance->set_visibility_range_end(vis_end);
+			instance->set_visibility_range_end_margin(vis_end * 0.1f);
+		}
+	}
+
+	// Apply materials to each surface.
+	for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
+		Ref<StandardMaterial3D> mat = create_material(materials[s], def.txd_name, def.flags, mesh, s);
+		if (mat.is_valid()) {
+			instance->set_surface_override_material(s, mat);
+		}
+	}
+
+	return instance;
+}
+
+// =============================================================================
+// Transparency — uses alpha scissor for textures with alpha, regular alpha
+// blending only for material-level transparency
+// =============================================================================
+
+void MapBuilder::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode, bool is_additive) {
+	mat->set_transparency(BaseMaterial3D::TRANSPARENCY_DISABLED);
+	mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_OPAQUE_ONLY);
+
+	if (is_additive) {
+		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+		mat->set_blend_mode(BaseMaterial3D::BLEND_MODE_ADD);
+		mat->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
+		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_DISABLED);
+	} else if (alpha_mode != Image::ALPHA_NONE) {
+		// Texture has alpha (trees, fences, etc.) — use scissor so shadows cast correctly
+		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
+		mat->set_alpha_scissor_threshold(0.5f);
+	} else if (is_transparent) {
+		// Material color has alpha < 1 but texture has no alpha
+		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
+	}
+}
+
+// =============================================================================
+// Material creation
+// =============================================================================
+
+Ref<StandardMaterial3D> MapBuilder::create_material(const DffMaterial &p_mat,
+													const String &p_txd_name, uint32_t p_flags,
+													const Ref<ArrayMesh> &p_mesh, int p_surface) {
+	Ref<StandardMaterial3D> mat;
+	mat.instantiate();
+
+	// Set base color from DFF material.
+	mat->set_albedo(p_mat.color);
+
+	// Culling.
+	if (p_flags & FLAG_FACE_CULLING_OFF) {
+		mat->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
+	} else {
+		mat->set_cull_mode(BaseMaterial3D::CULL_BACK);
+	}
+
+	// Apply texture if the material is textured.
+	Image::AlphaMode alpha_mode = Image::ALPHA_NONE;
+
+	if (p_mat.textured && !p_mat.texture_name.is_empty()) {
+		Ref<ImageTexture> tex;
+		bool has_alpha = false;
+		if (textures.get_texture(p_txd_name, p_mat.texture_name, tex, has_alpha)) {
+			mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
+
+			if (has_alpha) {
+				alpha_mode = Image::ALPHA_BIT;
+			}
+		}
+	}
+
+	// Apply transparency using proper alpha detection.
+	bool is_transparent = (p_flags & FLAG_DRAW_LAST) || (p_mat.color.a < 1.0f);
+	bool is_additive = (p_flags & FLAG_ALPHA_TRANSPARENCY);
+	apply_transparency(mat, is_transparent, alpha_mode, is_additive);
+
+	return mat;
+}
+
+// =============================================================================
+// Property accessors
+// =============================================================================
+
+void MapBuilder::set_streaming_distance(float p_dist) { streaming_distance = p_dist; }
+float MapBuilder::get_streaming_distance() const { return streaming_distance; }
+
+void MapBuilder::set_draw_distance_multiplier(float p_mult) { draw_distance_multiplier = p_mult; }
+float MapBuilder::get_draw_distance_multiplier() const { return draw_distance_multiplier; }
+
+void MapBuilder::set_debug_enabled(bool p_enabled) { debug_enabled = p_enabled; }
+bool MapBuilder::get_debug_enabled() const { return debug_enabled; }
+
+void MapBuilder::set_load_interiors(bool p_load) { load_interiors = p_load; }
+bool MapBuilder::get_load_interiors() const { return load_interiors; }
+
+void MapBuilder::set_load_collisions(bool p_load) { load_collisions = p_load; }
+bool MapBuilder::get_load_collisions() const { return load_collisions; }
+
+void MapBuilder::set_load_water(bool p_load) { load_water = p_load; }
+bool MapBuilder::get_load_water() const { return load_water; }
+
+void MapBuilder::set_gta_path(const String &p_path) { gta_path = p_path; }
+String MapBuilder::get_gta_path() const { return gta_path; }
+
+// =============================================================================
+// Binding
+// =============================================================================
+
+void MapBuilder::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_streaming_distance", "distance"), &MapBuilder::set_streaming_distance);
+	ClassDB::bind_method(D_METHOD("get_streaming_distance"), &MapBuilder::get_streaming_distance);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "streaming_distance"), "set_streaming_distance", "get_streaming_distance");
+
+	ClassDB::bind_method(D_METHOD("set_draw_distance_multiplier", "multiplier"), &MapBuilder::set_draw_distance_multiplier);
+	ClassDB::bind_method(D_METHOD("get_draw_distance_multiplier"), &MapBuilder::get_draw_distance_multiplier);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "draw_distance_multiplier"), "set_draw_distance_multiplier", "get_draw_distance_multiplier");
+
+	ClassDB::bind_method(D_METHOD("set_debug_enabled", "enabled"), &MapBuilder::set_debug_enabled);
+	ClassDB::bind_method(D_METHOD("get_debug_enabled"), &MapBuilder::get_debug_enabled);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_enabled"), "set_debug_enabled", "get_debug_enabled");
+
+	ClassDB::bind_method(D_METHOD("set_load_interiors", "load"), &MapBuilder::set_load_interiors);
+	ClassDB::bind_method(D_METHOD("get_load_interiors"), &MapBuilder::get_load_interiors);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "load_interiors"), "set_load_interiors", "get_load_interiors");
+
+	ClassDB::bind_method(D_METHOD("set_load_collisions", "load"), &MapBuilder::set_load_collisions);
+	ClassDB::bind_method(D_METHOD("get_load_collisions"), &MapBuilder::get_load_collisions);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "load_collisions"), "set_load_collisions", "get_load_collisions");
+
+	ClassDB::bind_method(D_METHOD("set_load_water", "load"), &MapBuilder::set_load_water);
+	ClassDB::bind_method(D_METHOD("get_load_water"), &MapBuilder::get_load_water);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "load_water"), "set_load_water", "get_load_water");
+
+	ClassDB::bind_method(D_METHOD("set_gta_path", "path"), &MapBuilder::set_gta_path);
+	ClassDB::bind_method(D_METHOD("get_gta_path"), &MapBuilder::get_gta_path);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "gta_path"), "set_gta_path", "get_gta_path");
+}
+
+} // namespace godot

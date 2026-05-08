@@ -67,8 +67,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.2899224, 0.2899224)
-shader_parameter/cirrus_position2 = Vector2(0.2899224, 0.2899224)
+shader_parameter/cirrus_position1 = Vector2(0.12709929, 0.12709929)
+shader_parameter/cirrus_position2 = Vector2(0.12709929, 0.12709929)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -78,7 +78,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(1.4495517, 1.4495517)
+shader_parameter/cumulus_position = Vector2(0.63541466, 0.63541466)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -98,10 +98,33 @@ background_mode = 2
 sky = SubResource("Sky_mlgqr")
 ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.4
 reflected_light_source = 2
 tonemap_mode = 3
+tonemap_exposure = 1.1
+tonemap_white = 1.1
+ssao_radius = 1.2
+ssil_enabled = true
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 0.4
+glow_bloom = 0.05
+glow_blend_mode = 2
+fog_light_color = Color(0.87, 0.8, 0.65, 1)
+fog_sun_scatter = 0.5
+fog_density = 0.0018
+fog_sky_affect = 0.35
+fog_depth_curve = 1.8
+adjustment_enabled = true
+adjustment_contrast = 1.05
+adjustment_saturation = 1.05
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_5u2yt"]
+exposure_sensitivity = 800.0
+dof_blur_far_enabled = true
+dof_blur_far_distance = 1200.0
+dof_blur_far_transition = 400.0
+dof_blur_amount = 0.05
 
 [node name="Map" type="Node3D" unique_id=143196836]
 
@@ -125,12 +148,17 @@ fog_enabled = false
 editor_time_enabled = false
 game_time_enabled = false
 current_time = 12.0
+tonemap_exposure = 1.1
+ambient_energy = 0.4
 wind_direction = 2.35619451204804
 metadata/_custom_type_script = "uid://deo0gxkmk2ahd"
 
 [node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=615458439]
 transform = Transform3D(0.9985913, 0.04123192, -0.03339601, 0, 0.62940073, 0.7770809, 0.05306001, -0.7759862, 0.6285141, -0.03339601, 0.7770809, 0.6285141)
 shadow_enabled = true
+shadow_blur = 0.5
+directional_shadow_max_distance = 500.0
+directional_shadow_pancake_size = 5.0
 
 [node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=380598873]
 transform = Transform3D(0, -0.96049464, 0.27829847, 0.6677828, 0.2071532, 0.71495014, -0.7443562, 0.18584293, 0.64140177, 0.27829847, 0.71495014, 0.64140177)
@@ -153,8 +181,7 @@ game_time_enabled = false
 dome_path = NodePath("../SkyDome")
 current_time = 12.0
 
-[node name="MapBuilder" type="MapBuilder" parent="." unique_id=744991882]
+[node name="MapBuilder" type="MapBuilder" parent="." unique_id=1997474710]
 streaming_distance = 1500.0
-draw_distance_multiplier = 1.5
-spawns_per_frame_limit = 30
-debug_enabled = true
+draw_distance_multiplier = 3.0
+load_interiors = true

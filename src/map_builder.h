@@ -1,172 +1,114 @@
-#ifndef GTAEDITOR_MAP_BUILDER_H
-#define GTAEDITOR_MAP_BUILDER_H
+#ifndef MAP_BUILDER_H
+#define MAP_BUILDER_H
 
-#include "classes/col_file.h"
-#include "classes/item_def.h"
+#include "classes/dat_parser.h"
+#include "classes/gta_path_resolver.h"
+#include "classes/ide_parser.h"
+#include "classes/img_archive.h"
+#include "classes/ipl_parser.h"
+#include "classes/item_definition.h"
 #include "classes/item_placement.h"
-#include "classes/tdfx.h"
-#include "classes/tdfx_light.h"
-#include "streamed_mesh.h"
+#include "classes/model_collection.h"
+#include "classes/texture_collection.h"
 
+#include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/classes/camera3d.hpp>
-#include <godot_cpp/classes/canvas_layer.hpp>
-#include <godot_cpp/classes/label.hpp>
-#include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/image.hpp>
+#include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
-#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
+#include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/hash_set.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
-#include <memory>
+namespace godot {
 
-using namespace godot;
+// =============================================================================
+// MapBuilder — Main GDExtension Node3D that loads the GTA SA map.
+//
+// On _ready(), it parses all game data files and spawns all objects at once
+// (matching the Unity reference behavior). Godot's visibility_range is used
+// for distance-based culling instead of manual streaming.
+// =============================================================================
 
-/// Builds and streams the GTA San Andreas world map with LOD support.
-///
-/// Streaming model (inspired by SanAndreasUnity):
-///   - Each placement uses its ItemDef::render_distance for streaming range
-///   - LOD placements are resolved per-IPL-group (text + binary streams)
-///   - A LOD model is shown only when its HD parent is NOT active with a loaded mesh
-///   - Collision and lights are only attached within physics_distance
-///   - StreamedMesh instances do NOT run _process(); MapBuilder polls loading meshes
-///   - Hidden instances are pooled instead of destroyed to reduce node churn
-class MapBuilder : public Node {
-	GDCLASS(MapBuilder, Node);
+class MapBuilder : public Node3D {
+	GDCLASS(MapBuilder, Node3D)
 
 public:
 	MapBuilder();
 	~MapBuilder();
 
 	void _ready() override;
-	void _process(double p_delta) override;
+	void _process(double delta) override;
 
-	/// Maximum streaming distance (caps per-object render_distance).
-	float streaming_distance = 300.0f;
-
-	float get_streaming_distance() const;
+	// -- Exported property accessors --
 	void set_streaming_distance(float p_dist);
+	float get_streaming_distance() const;
 
-	/// Multiplier for extending HD model visibility range.
-	float draw_distance_multiplier = 3.0f;
-
-	float get_draw_distance_multiplier() const;
 	void set_draw_distance_multiplier(float p_mult);
+	float get_draw_distance_multiplier() const;
 
-	/// Maximum number of placements to spawn per frame.
-	int spawns_per_frame_limit = 50;
-
-	int get_spawns_per_frame_limit() const;
-	void set_spawns_per_frame_limit(int p_limit);
-
-	/// Enable global debug features (prints, UI).
-	bool debug_enabled = false;
-
-	float debug_label_distance = 100.0f;
-	float get_debug_label_distance() const;
-	void set_debug_label_distance(float p_dist);
-
-	bool get_debug_enabled() const;
 	void set_debug_enabled(bool p_enabled);
+	bool get_debug_enabled() const;
+
+	void set_load_interiors(bool p_load);
+	bool get_load_interiors() const;
+
+	void set_load_collisions(bool p_load);
+	bool get_load_collisions() const;
+
+	void set_load_water(bool p_load);
+	bool get_load_water() const;
+
+	void set_gta_path(const String &p_path);
+	String get_gta_path() const;
 
 protected:
 	static void _bind_methods();
 
 private:
-	// ── Data stores ──────────────────────────────────────────────────────
-	HashMap<int, std::shared_ptr<ItemDef>> items;
-	Vector<std::shared_ptr<TDFX>> item_children;
-	Vector<std::shared_ptr<ItemPlacement>> placements;
-	Vector<std::shared_ptr<ColFile>> collisions;
+	// -- Exported properties --
+	float streaming_distance = 300.0f;
+	float draw_distance_multiplier = 1.5f;
+	bool debug_enabled = true;
+	bool load_interiors = false;
+	bool load_collisions = true;
+	bool load_water = true;
+	String gta_path = "res://gta/";
 
-	// ── Scene nodes ──────────────────────────────────────────────────────
-	Node3D *map_root = nullptr;
-	Camera3D *camera = nullptr;
-	CanvasLayer *debug_canvas = nullptr;
+	// -- Internal state --
+	bool loaded = false;
+	GtaPathResolver path_resolver;
+	ImgArchive img_archive;
+	HashMap<int32_t, ItemDefinition> definitions;
+	Vector<ItemPlacement> placements;
+	ModelCollection models;
+	TextureCollection textures;
 
-	// ── Spatial grid ─────────────────────────────────────────────────────
-	struct CellCoord {
-		int x = 0;
-		int z = 0;
-		bool operator==(const CellCoord &other) const { return x == other.x && z == other.z; }
-	};
+	// -- Streaming state --
+	int stream_process_index = 0;
+	Vector<MeshInstance3D *> spawned_nodes;
 
-	struct CellCoordHash {
-		static _FORCE_INLINE_ uint32_t hash(const CellCoord &c) {
-			uint32_t h = static_cast<uint32_t>(c.x) * 73856093;
-			h ^= static_cast<uint32_t>(c.z) * 19349663;
-			return h;
-		}
-	};
+	// -- Loading methods --
+	void load_map();
+	void load_dat_file(const String &p_dat_path);
+	void load_ide_file(const String &p_ide_path);
+	void load_text_ipl(const String &p_ipl_path);
+	void load_streaming_ipls();
+	void resolve_lods();
+	void index_img_assets();
+	void spawn_all();
 
-	struct SpatialGridTier {
-		float cell_size = 200.0f;
-		float max_distance = 300.0f;
-		HashMap<CellCoord, Vector<int>, CellCoordHash> cells;
-	};
+	// -- Spawning methods --
+	MeshInstance3D *spawn_placement(int32_t p_index);
+	Ref<StandardMaterial3D> create_material(const DffMaterial &p_mat, const String &p_txd_name,
+											uint32_t p_flags, const Ref<ArrayMesh> &p_mesh, int p_surface);
 
-	Vector<SpatialGridTier> grid_tiers;
-
-	// ── Active instances ─────────────────────────────────────────────────
-
-	/// Active (spawned and visible) instances: placement index → scene node.
-	HashMap<int, Node3D *> active_instances;
-
-	/// Set of placement indices whose StreamedMesh has fully loaded its mesh.
-	/// Used for LOD visibility: LOD is hidden only when parent is in this set.
-	HashSet<int> loaded_instances;
-
-	/// StreamedMesh instances currently in LOADING state, need polling.
-	/// Pair: (placement_index, StreamedMesh pointer)
-	Vector<std::pair<int, StreamedMesh *>> loading_meshes;
-
-	// ── Hidden instance pool (reduces node churn) ────────────────────────
-
-	/// Hidden (out-of-range) instances kept alive for fast re-show.
-	HashMap<int, Node3D *> hidden_instances;
-
-	/// LRU order for hidden instances (front = oldest).
-	Vector<int> hidden_lru;
-
-	/// Maximum number of hidden instances to keep pooled.
-	static constexpr int MAX_HIDDEN_POOL = 2000;
-
-	/// Reverse LOD map: LOD placement index → HD parent placement indices.
-	/// Used for O(1) lookup: "are any of my HD parents currently active?"
-	HashMap<int, Vector<int>> lod_to_parents;
-
-	/// Distance within which collision/lights are attached.
-	static constexpr float PHYSICS_DISTANCE = 120.0f;
-
-	/// Hysteresis multiplier for unloading (unload at draw_dist * this).
-	static constexpr float UNLOAD_HYSTERESIS = 1.1f;
-
-	void _build_spatial_grid();
-	CellCoord _cell_for_position(const Vector3 &pos, float cell_size) const;
-
-	/// Get the effective streaming distance for a placement.
-	float _get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) const;
-
-	// ── Parsing helpers ──────────────────────────────────────────────────
-	void _read_map_data(const String &path,
-						void (MapBuilder::*handler)(const String &, const PackedStringArray &, const String &),
-						const String &context);
-
-	void _read_ide_line(const String &section, const PackedStringArray &tokens, const String &context);
-	void _read_ipl_line(const String &section, const PackedStringArray &tokens, const String &context);
-
-	/// Load a full IPL group (text + binary streams) and resolve LOD links within it.
-	void _load_ipl_group(const String &ipl_path);
-
-	void _parse_binary_ipl(const String &asset_name, Vector<std::shared_ptr<ItemPlacement>> &out);
-	void _clear_map();
-	Node3D *_spawn_placement(const std::shared_ptr<ItemPlacement> &ipl, bool near);
-
-	/// Evict oldest hidden instances if pool exceeds MAX_HIDDEN_POOL.
-	void _evict_hidden_pool();
-
-	/// Temporary buffer for per-IPL-group LOD resolution.
-	int _ipl_group_base = 0;
+	// -- Transparency helper --
+	static void apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode, bool is_additive = false);
 };
 
-#endif // GTAEDITOR_MAP_BUILDER_H
+} // namespace godot
+
+#endif // MAP_BUILDER_H
