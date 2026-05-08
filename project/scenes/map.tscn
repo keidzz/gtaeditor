@@ -12,6 +12,8 @@
 [ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="11_m335s"]
 [ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="12_sq6bu"]
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_mlgqr"]
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4b7dj"]
 shader = ExtResource("3_wslke")
 shader_parameter/sky_visible = true
@@ -65,8 +67,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.12938593, 0.12938593)
-shader_parameter/cirrus_position2 = Vector2(0.12938593, 0.12938593)
+shader_parameter/cirrus_position1 = Vector2(0.2899224, 0.2899224)
+shader_parameter/cirrus_position2 = Vector2(0.2899224, 0.2899224)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -76,7 +78,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(0.646845, 0.646845)
+shader_parameter/cumulus_position = Vector2(1.4495517, 1.4495517)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -108,8 +110,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 21.998528, 1669.64
 script = ExtResource("2_paxxb")
 metadata/_custom_type_script = "uid://br6b4uik4d7ds"
 
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlyCamera" unique_id=159059156]
+shape = SubResource("SphereShape3D_mlgqr")
+
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1417168564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 24.37539, 1669.6431)
+use_collision = true
 
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1300654363]
 environment = SubResource("Environment_y2ir2")
@@ -148,6 +154,7 @@ dome_path = NodePath("../SkyDome")
 current_time = 12.0
 
 [node name="MapBuilder" type="MapBuilder" parent="." unique_id=744991882]
-streaming_distance = 1000.0
+streaming_distance = 1500.0
+draw_distance_multiplier = 1.5
 spawns_per_frame_limit = 30
 debug_enabled = true

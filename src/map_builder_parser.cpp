@@ -12,10 +12,16 @@ void MapBuilder::_load_ipl_group(const String &ipl_path) {
 	// into a local list, then resolve LOD within it, then append to global list.
 	int group_base = placements.size();
 
-	// Load text IPL
+	if (debug_enabled) {
+		UtilityFunctions::print("_load_ipl_group: starting for " + ipl_path);
+	}
+
+	// Load text IPL (appends directly to global placements)
 	_read_map_data(ipl_path, &MapBuilder::_read_ipl_line, ipl_path);
 
-	// Load binary stream IPLs
+	int after_text = placements.size();
+
+	// Load binary stream IPLs (appends to global placements)
 	String base_name = ipl_path.get_file().get_basename().to_lower();
 	int stream_id = 0;
 
@@ -25,7 +31,6 @@ void MapBuilder::_load_ipl_group(const String &ipl_path) {
 			if (debug_enabled) {
 				UtilityFunctions::print("Loading stream IPL: " + stream_name);
 			}
-			// Parse directly into global placements array
 			Vector<std::shared_ptr<ItemPlacement>> stream_placements;
 			_parse_binary_ipl(stream_name, stream_placements);
 			for (int i = 0; i < stream_placements.size(); i++) {
@@ -38,30 +43,37 @@ void MapBuilder::_load_ipl_group(const String &ipl_path) {
 	}
 
 	int group_end = placements.size();
+	int group_size = group_end - group_base;
 
-	// ── Resolve LOD links within this IPL group ──────────────────────────
+	if (debug_enabled) {
+		UtilityFunctions::print("_load_ipl_group: loaded " + String::num_int64(group_size) +
+			" placements (" + String::num_int64(after_text - group_base) + " text + " +
+			String::num_int64(group_end - after_text) + " binary)");
+	}
+
+	// ── Resolve LOD links within this group (lod_index is LOCAL to combined group) ───
 	// Like SanAndreasUnity's ResolveLod(): lod_index is an index INTO THIS GROUP.
 	// HD placements point TO their LOD child via lod_index.
-	for (int i = group_base; i < group_end; i++) {
-		auto &pl = placements[i];
-		if (pl->lod_index >= 0 && pl->lod_index < (group_end - group_base)) {
-			int lod_global_idx = group_base + pl->lod_index;
-
+	for (int i = 0; i < group_size; i++) {
+		int global_idx = group_base + i;
+		auto &pl = placements[global_idx];
+		if (pl->lod_index >= 0 && pl->lod_index < group_size) {
 			// Skip self-references (some IPL entries point to themselves)
-			if (lod_global_idx == i)
+			if (pl->lod_index == i)
 				continue;
 
+			int lod_global_idx = group_base + pl->lod_index;
 			auto &lod_pl = placements[lod_global_idx];
 
 			// Mark the target as LOD (primary mechanism)
 			lod_pl->is_lod = true;
-			// Link: HD parent (i) → LOD child (lod_global_idx)
+			// Link: HD parent (i) → LOD child (lod_index) using GLOBAL indices
 			pl->lod_child_index = lod_global_idx;
 			// Reverse link for O(1) lookup in _process()
 			if (!lod_to_parents.has(lod_global_idx)) {
 				lod_to_parents.insert(lod_global_idx, Vector<int>());
 			}
-			lod_to_parents[lod_global_idx].push_back(i);
+			lod_to_parents[lod_global_idx].push_back(global_idx);
 		}
 	}
 
@@ -95,7 +107,7 @@ void MapBuilder::_read_map_data(const String &path,
 		if (line.is_empty() || line.begins_with("#"))
 			continue;
 
-		PackedStringArray tokens = line.replace(" ", "").split(",", false);
+		PackedStringArray tokens = line.strip_edges().split(",", false);
 		if (tokens.size() == 1) {
 			section = tokens[0];
 		} else {
@@ -200,12 +212,12 @@ void MapBuilder::_parse_binary_ipl(const String &asset_name, Vector<std::shared_
 
 	uint32_t num_instances = file->get_32();
 
-	file->seek(base_offset + 0x1C);
-	uint32_t offset_instances = file->get_32();
+	// SA binary IPL header is 0x4C bytes total before instances.
+	// Skip entire header (like Unity's reader.SkipStream(68)): magic(4) + count(4) + unknown(5*4) + offsets(4*4) = 44 = 0x2C
+	// Actually we just seek to known offset 0x4C to skip to instances.
+	file->seek(base_offset + 0x4C);
 
 	if (num_instances > 0) {
-		file->seek(base_offset + offset_instances);
-
 		for (uint32_t i = 0; i < num_instances; i++) {
 			float pos_x = file->get_float();
 			float pos_y = file->get_float();

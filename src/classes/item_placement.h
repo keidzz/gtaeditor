@@ -14,7 +14,9 @@ struct ItemPlacement {
 	godot::Vector3 position;
 	godot::Vector3 scale = godot::Vector3(1.0f, 1.0f, 1.0f);
 	godot::Quaternion rotation;
-	/// Index of the LOD parent placement (-1 = no LOD parent, i.e. this IS a LOD model).
+	/// Index into this IPL group of the LOD (low-detail) child for this placement.
+/// -1 = this placement has no LOD child.
+/// Populated during parse; only meaningful before LOD-linking pass runs.
 	int lod_index = -1;
 	/// Index of the LOD child (lower-detail version) of this placement (-1 = none).
 	/// Populated after all placements are loaded by the LOD linking pass.

@@ -17,21 +17,18 @@ float MapBuilder::_get_draw_distance(const std::shared_ptr<ItemPlacement> &pl) c
 		float dd = items[pl->id]->render_distance * draw_distance_multiplier;
 		if (dd > 0.0f) {
 			if (pl->is_lod) {
-				// LODs stream out to full streaming distance
-				return streaming_distance;
+				return streaming_distance * 3.0f;
 			}
-			// HD: respect game distance but cap to a fraction of streaming_distance
-			// so LODs always take over beyond this point
 			return MIN(dd, streaming_distance * 0.4f);
 		}
 	}
-	return streaming_distance * 0.4f;
+	return pl->is_lod ? streaming_distance * 3.0f : streaming_distance * 0.4f;
 }
 void MapBuilder::_build_spatial_grid() {
 	grid_tiers.clear();
-	grid_tiers.push_back({ 100.0f, 300.0f, {} }); // Tier 0: HD small props
-	grid_tiers.push_back({ 400.0f, 1000.0f, {} }); // Tier 1: HD large objects
-	grid_tiers.push_back({ 1000.0f, 10000.0f, {} }); // Tier 2: LODs only
+	grid_tiers.push_back({ 100.0f, 300.0f, {} });  // Tier 0: HD small/medium objects (draw_dist <= 100m)
+	grid_tiers.push_back({ 300.0f, 600.0f, {} });  // Tier 1: HD large objects (draw_dist 100-300m)
+	grid_tiers.push_back({ 600.0f, 3000.0f, {} }); // Tier 2: LODs or high draw distance (> 300m)
 
 	for (int i = 0; i < placements.size(); i++) {
 		if (placements[i]->interior != 0 && placements[i]->interior != 13)
@@ -43,10 +40,10 @@ void MapBuilder::_build_spatial_grid() {
 		}
 
 		int tier_idx;
-		if (placements[i]->is_lod) {
-			// All LODs go to tier 2 regardless of their render_distance
+		if (placements[i]->is_lod || dd > 300.0f) {
+			// LODs or high draw distance go to tier 2
 			tier_idx = 2;
-		} else if (dd > 300.0f) {
+		} else if (dd > 100.0f) {
 			tier_idx = 1;
 		} else {
 			tier_idx = 0;
@@ -99,6 +96,7 @@ void MapBuilder::_evict_hidden_pool() {
 
 		hidden_lru.remove_at(i);
 		hidden_instances.erase(idx);
+		loaded_instances.erase(idx); // Remove from loaded set to prevent LOD suppression
 
 		// Remove from loading_meshes if present
 		for (int j = loading_meshes.size() - 1; j >= 0; j--) {
