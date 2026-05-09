@@ -2,6 +2,7 @@
 #define MODEL_COLLECTION_H
 
 #include "../rw/dff_parser.h"
+#include "col_parser.h"
 #include "img_archive.h"
 
 #include <godot_cpp/classes/array_mesh.hpp>
@@ -27,8 +28,12 @@ public:
 	// Get the parsed mesh for a model. Parses the DFF on first access.
 	Ref<ArrayMesh> get_mesh(const String &p_name);
 
-	// Get the cached collision shape for a model. Must call get_mesh() first, or this will trigger parse.
-	Ref<ConcavePolygonShape3D> get_col_shape(const String &p_name);
+	// Load a global COLFILE archive containing multiple collision models.
+	void load_col_file(const String &p_absolute_path);
+	void load_col_bytes(const PackedByteArray &p_bytes, const String &p_name);
+
+	// Get the collision model for a name (checks COLFILEs, then IMG .col, then generates fallback).
+	bool get_col_model(const String &p_name, ColModel &r_model);
 
 	// Get material info for a model. Must call get_mesh() first.
 	Vector<DffMaterial> get_materials(const String &p_name);
@@ -48,6 +53,7 @@ private:
 	};
 
 	HashMap<String, DffEntry> dff_entries;
+	HashMap<String, ColModel> col_models;
 
 	// Ensure a DFF is loaded (parse if needed).
 	void ensure_loaded(DffEntry &entry);

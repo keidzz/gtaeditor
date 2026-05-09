@@ -66,7 +66,7 @@ void MapBuilder::_process(double delta) {
 
 		bool is_lod = placement.lod_begin_distance >= 0.0f;
 		float stream_dist = is_lod ? streaming_distance : MIN(placement.draw_distance * draw_distance_multiplier, streaming_distance);
-		
+
 		float stream_dist_sq = stream_dist * stream_dist;
 		// Hysteresis to prevent objects from popping in and out at the border
 		float despawn_margin = is_lod ? 100.0f : 50.0f;
@@ -257,6 +257,14 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 		load_ide_file(dat.ide_paths[i]);
 	}
 
+	// Load COLs.
+	for (int i = 0; i < dat.col_paths.size(); i++) {
+		String resolved = path_resolver.resolve(dat.col_paths[i]);
+		if (!resolved.is_empty()) {
+			models.load_col_file(resolved);
+		}
+	}
+
 	// Load text IPLs and their streaming binary counterparts.
 	// LOD resolution is per-region: each text IPL + its _stream{N} IPLs
 	// form a region, and LOD indices are resolved within that combined list.
@@ -399,6 +407,15 @@ void MapBuilder::index_img_assets() {
 	for (int i = 0; i < txd_entries.size(); i++) {
 		textures.register_txd(txd_entries[i], &img_archive);
 	}
+
+	// Parse all COL files from the IMG archive.
+	Vector<String> col_entries = img_archive.get_entries_with_extension(".col");
+	for (int i = 0; i < col_entries.size(); i++) {
+		PackedByteArray data = img_archive.read_entry(col_entries[i]);
+		if (!data.is_empty()) {
+			models.load_col_bytes(data, col_entries[i]);
+		}
+	}
 }
 
 // =============================================================================
@@ -446,12 +463,15 @@ MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
 
 	// Add static collision body if enabled (only for HD models, skip LODs)
 	if (load_collisions && !is_lod) {
-		Ref<ConcavePolygonShape3D> col_shape = models.get_col_shape(model_name);
-		if (col_shape.is_valid()) {
+		ColModel col_model;
+		if (models.get_col_model(model_name, col_model)) {
 			StaticBody3D *body = memnew(StaticBody3D);
-			CollisionShape3D *col = memnew(CollisionShape3D);
-			col->set_shape(col_shape);
-			body->add_child(col);
+			for (int i = 0; i < col_model.shapes.size(); i++) {
+				CollisionShape3D *col = memnew(CollisionShape3D);
+				col->set_shape(col_model.shapes[i].shape);
+				col->set_transform(col_model.shapes[i].transform);
+				body->add_child(col);
+			}
 			instance->add_child(body);
 		}
 	}

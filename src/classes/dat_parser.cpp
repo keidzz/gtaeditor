@@ -42,14 +42,33 @@ DatResult DatParser::parse(const String &p_absolute_path) {
 			result.img_paths.push_back(path);
 		} else if (keyword == "TEXDICTION") {
 			result.txd_paths.push_back(path);
+		} else if (keyword == "COLFILE" || keyword == "COL") {
+			// Format: COLFILE 0 models\coll\generic.col
+			// The path is the last token (if there are multiple tokens)
+			// Sometimes it's just "COLFILE models\coll\generic.col"
+			if (tokens.size() == 2) {
+				String path_part = tokens[1].strip_edges();
+				// If it has spaces and starts with a number, split it again
+				if (path_part.contains(" ")) {
+					PackedStringArray sub_tokens = path_part.split(" ", false);
+					if (sub_tokens.size() > 1) {
+						result.col_paths.push_back(sub_tokens[sub_tokens.size() - 1]);
+					} else {
+						result.col_paths.push_back(path_part);
+					}
+				} else {
+					result.col_paths.push_back(path_part);
+				}
+			}
 		}
-		// SPLASH, COLFILE, MODELFILE — ignored for map loading.
+		// SPLASH, MODELFILE — ignored for map loading.
 	}
 
 	UtilityFunctions::print("[DatParser] Parsed ", p_absolute_path,
 			" — IDE:", result.ide_paths.size(),
 			" IPL:", result.ipl_paths.size(),
-			" IMG:", result.img_paths.size());
+			" IMG:", result.img_paths.size(),
+			" COL:", result.col_paths.size());
 
 	return result;
 }

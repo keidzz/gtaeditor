@@ -38,14 +38,22 @@ static PackedStringArray split_ide_line(const String &p_line) {
 // Helper: parse the section header string to an enum value.
 static IdeSection parse_section_name(const String &p_name) {
 	String lower = p_name.to_lower().strip_edges();
-	if (lower == "objs") return IdeSection::OBJS;
-	if (lower == "tobj") return IdeSection::TOBJ;
-	if (lower == "anim") return IdeSection::ANIM;
-	if (lower == "cars") return IdeSection::CARS;
-	if (lower == "peds") return IdeSection::PEDS;
-	if (lower == "weap") return IdeSection::WEAP;
-	if (lower == "txdp") return IdeSection::TXDP;
-	if (lower == "2dfx") return IdeSection::_2DFX;
+	if (lower == "objs")
+		return IdeSection::OBJS;
+	if (lower == "tobj")
+		return IdeSection::TOBJ;
+	if (lower == "anim")
+		return IdeSection::ANIM;
+	if (lower == "cars")
+		return IdeSection::CARS;
+	if (lower == "peds")
+		return IdeSection::PEDS;
+	if (lower == "weap")
+		return IdeSection::WEAP;
+	if (lower == "txdp")
+		return IdeSection::TXDP;
+	if (lower == "2dfx")
+		return IdeSection::_2DFX;
 	return IdeSection::UNKNOWN;
 }
 
@@ -89,7 +97,8 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 		switch (current_section) {
 			case IdeSection::OBJS: {
 				// OBJS: ID, ModelName, TextureName, ObjectCount?, DrawDist, [DrawDist2..], Flags
-				if (tokens.size() < 5) break;
+				if (tokens.size() < 5)
+					break;
 
 				ItemDefinition def;
 				def.id = tokens[0].to_int();
@@ -111,7 +120,8 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 
 			case IdeSection::TOBJ: {
 				// TOBJ: ID, ModelName, TextureName, ObjectCount?, DrawDist, [DrawDist2..], Flags, TimeOn, TimeOff
-				if (tokens.size() < 7) break;
+				if (tokens.size() < 7)
+					break;
 
 				ItemDefinition def;
 				def.id = tokens[0].to_int();
@@ -135,7 +145,8 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 
 			case IdeSection::ANIM: {
 				// ANIM (SA only): ID, ModelName, TextureName, AnimName, DrawDist, Flags
-				if (tokens.size() < 6) break;
+				if (tokens.size() < 6)
+					break;
 
 				ItemDefinition def;
 				def.id = tokens[0].to_int();
@@ -150,7 +161,8 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 
 			case IdeSection::TXDP: {
 				// TXDP: TextureName, TextureParentName
-				if (tokens.size() < 2) break;
+				if (tokens.size() < 2)
+					break;
 
 				TextureParent tp;
 				tp.child_name = tokens[0].to_lower();

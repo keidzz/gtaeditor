@@ -35,20 +35,31 @@ Ref<ArrayMesh> ModelCollection::get_mesh(const String &p_name) {
 	return entry.result.mesh;
 }
 
-Ref<ConcavePolygonShape3D> ModelCollection::get_col_shape(const String &p_name) {
+void ModelCollection::load_col_file(const String &p_absolute_path) {
+	HashMap<String, ColModel> parsed = ColParser::parse(p_absolute_path);
+	for (const KeyValue<String, ColModel> &kv : parsed) {
+		col_models[kv.key] = kv.value;
+	}
+}
+
+void ModelCollection::load_col_bytes(const PackedByteArray &p_bytes, const String &p_name) {
+	HashMap<String, ColModel> parsed = ColParser::parse_bytes(p_bytes, p_name);
+	for (const KeyValue<String, ColModel> &kv : parsed) {
+		col_models[kv.key] = kv.value;
+	}
+}
+
+bool ModelCollection::get_col_model(const String &p_name, ColModel &r_model) {
 	String key = p_name.to_lower();
-	if (!dff_entries.has(key)) {
-		return Ref<ConcavePolygonShape3D>();
+
+	if (col_models.has(key)) {
+		r_model = col_models[key];
+		return true;
 	}
 
-	DffEntry &entry = dff_entries[key];
-	ensure_loaded(entry);
-
-	if (entry.result.col_shape.is_null() && entry.result.mesh.is_valid()) {
-		entry.result.col_shape = entry.result.mesh->create_trimesh_shape();
-	}
-
-	return entry.result.col_shape;
+	// No fallback! If a map object doesn't have a corresponding .col entry,
+	// it is intentionally non-colliding in GTA SA (like cables, grass, etc.).
+	return false;
 }
 
 Vector<DffMaterial> ModelCollection::get_materials(const String &p_name) {
@@ -68,6 +79,7 @@ int ModelCollection::get_model_count() const {
 
 void ModelCollection::clear() {
 	dff_entries.clear();
+	col_models.clear();
 }
 
 void ModelCollection::ensure_loaded(DffEntry &entry) {

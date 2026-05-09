@@ -19,6 +19,7 @@ struct DatResult {
 	Vector<String> ipl_paths;
 	Vector<String> img_paths;
 	Vector<String> txd_paths;
+	Vector<String> col_paths;
 };
 
 class DatParser {

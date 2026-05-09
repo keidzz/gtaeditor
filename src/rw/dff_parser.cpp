@@ -184,11 +184,7 @@ void DffParserInternal::parse_geometry(const RWSectionHeader &header) {
 		for (int32_t i = 0; i < vertex_count; i++) {
 			PackedByteArray rgba = reader.read_bytes(4);
 			if (rgba.size() == 4) {
-				geom.colors.set(i, Color(
-						rgba[0] / 255.0f,
-						rgba[1] / 255.0f,
-						rgba[2] / 255.0f,
-						rgba[3] / 255.0f));
+				geom.colors.set(i, Color(rgba[0] / 255.0f, rgba[1] / 255.0f, rgba[2] / 255.0f, rgba[3] / 255.0f));
 			}
 		}
 	}
@@ -311,7 +307,8 @@ void DffParserInternal::parse_material() {
 // =============================================================================
 
 void DffParserInternal::parse_bin_mesh() {
-	if (geometries.is_empty()) return;
+	if (geometries.is_empty())
+		return;
 	ParsedGeometry &geom = geometries.ptrw()[geometries.size() - 1];
 
 	int32_t is_strip = reader.read_int32();
@@ -365,7 +362,7 @@ void DffParserInternal::parse_bin_mesh() {
 				sm.indices.set(i * 3 + 1, i1);
 				sm.indices.set(i * 3 + 2, i0);
 			}
-			// Consume any remaining indices that don't form a complete triangle 
+			// Consume any remaining indices that don't form a complete triangle
 			// (some broken DFFs have trailing garbage indices).
 			for (int32_t i = tri_count_list * 3; i < index_count; i++) {
 				reader.read_int32();
@@ -505,7 +502,8 @@ DffResult DffParser::parse(const PackedByteArray &p_data) {
 		if (geom.has_bin_mesh && !geom.sub_meshes.is_empty()) {
 			for (int s = 0; s < geom.sub_meshes.size(); s++) {
 				const ParsedGeometry::SubMesh &sm = geom.sub_meshes[s];
-				if (sm.indices.is_empty()) continue;
+				if (sm.indices.is_empty())
+					continue;
 
 				PackedInt32Array packed_indices;
 				packed_indices.resize(sm.indices.size());
