@@ -25,7 +25,7 @@ MapBuilder::~MapBuilder() {
 }
 
 // =============================================================================
-// Godot lifecycle — everything loads in _ready(), no _process() streaming
+// Godot lifecycle
 // =============================================================================
 
 void MapBuilder::_ready() {
@@ -52,6 +52,13 @@ void MapBuilder::_process(double delta) {
 		cam_pos = cam->get_global_position();
 	}
 
+	// Re-sort streaming order when camera moves significantly (>100 units).
+	float moved_sq = cam_pos.distance_squared_to(last_sort_position);
+	if (moved_sq > 100.0f * 100.0f) {
+		sort_stream_order(cam_pos);
+		stream_process_index = 0;
+	}
+
 	int batch_size = 2000;
 
 	uint64_t start_time = Time::get_singleton()->get_ticks_msec();
@@ -59,7 +66,7 @@ void MapBuilder::_process(double delta) {
 
 	// Time budget: max ~8ms per frame to maintain >60FPS
 	while (checked_this_frame < batch_size && (Time::get_singleton()->get_ticks_msec() - start_time) < 8) {
-		int i = stream_process_index;
+		int i = stream_order[stream_process_index];
 		const ItemPlacement &placement = placements[i];
 
 		float dist_sq = placement.position.distance_squared_to(cam_pos);
@@ -161,54 +168,9 @@ void MapBuilder::load_map() {
 		String water_path = path_resolver.resolve("data/water.dat");
 		if (!water_path.is_empty()) {
 			Vector<WaterPlane> water_planes = WaterParser::parse(water_path);
-			if (water_planes.size() > 0) {
-				PackedVector3Array vertices;
-				PackedInt32Array indices;
-				int idx = 0;
-				for (int i = 0; i < water_planes.size(); i++) {
-					const WaterPlane &wp = water_planes[i];
-					if (wp.is_triangle) {
-						vertices.push_back(wp.p1);
-						vertices.push_back(wp.p2);
-						vertices.push_back(wp.p3);
-						indices.push_back(idx++);
-						indices.push_back(idx++);
-						indices.push_back(idx++);
-					} else {
-						vertices.push_back(wp.p1);
-						vertices.push_back(wp.p2);
-						vertices.push_back(wp.p3);
-						vertices.push_back(wp.p4);
-						indices.push_back(idx);
-						indices.push_back(idx + 1);
-						indices.push_back(idx + 2);
-						indices.push_back(idx + 2);
-						indices.push_back(idx + 3);
-						indices.push_back(idx);
-						idx += 4;
-					}
-				}
-
-				Array arrays;
-				arrays.resize(Mesh::ARRAY_MAX);
-				arrays[Mesh::ARRAY_VERTEX] = vertices;
-				arrays[Mesh::ARRAY_INDEX] = indices;
-
-				Ref<ArrayMesh> water_mesh;
-				water_mesh.instantiate();
-				water_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-
-				Ref<StandardMaterial3D> water_mat;
-				water_mat.instantiate();
-				water_mat->set_albedo(Color(0.2f, 0.4f, 0.8f, 0.6f));
-				water_mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-				water_mesh->surface_set_material(0, water_mat);
-
-				MeshInstance3D *water_instance = memnew(MeshInstance3D);
-				water_instance->set_mesh(water_mesh);
-				water_instance->set_name("WaterPlanes");
+			MeshInstance3D *water_instance = MapWaterLoader::build_water_mesh(water_planes);
+			if (water_instance) {
 				add_child(water_instance);
-
 				if (debug_enabled) {
 					UtilityFunctions::print("[MapBuilder] Loaded ", water_planes.size(), " water planes");
 				}
@@ -227,22 +189,22 @@ void MapBuilder::load_map() {
 		UtilityFunctions::print("[MapBuilder] ==============================");
 	}
 
-	// Make loading instant: sort placements by distance to the initial camera, so nearby objects are at the start of the array
-	// and get checked first by the streaming system.
+	// 8. Initialize streaming system with distance-priority ordering.
+	spawned_nodes.resize(placements.size());
+	spawned_nodes.fill(nullptr);
+
+	// Build stream_order index array and sort by distance to initial camera position.
 	Vector3 start_pos = Vector3(0, 0, 0);
 	Camera3D *cam = get_viewport()->get_camera_3d();
 	if (cam) {
 		start_pos = cam->get_global_position();
 	}
 
-	ItemPlacement *ptr = placements.ptrw();
-	std::sort(ptr, ptr + placements.size(), [start_pos](const ItemPlacement &a, const ItemPlacement &b) {
-		return a.position.distance_squared_to(start_pos) < b.position.distance_squared_to(start_pos);
-	});
-
-	// 7. Initialize streaming system
-	spawned_nodes.resize(placements.size());
-	spawned_nodes.fill(nullptr);
+	stream_order.resize(placements.size());
+	for (int i = 0; i < placements.size(); i++) {
+		stream_order.write[i] = i;
+	}
+	sort_stream_order(start_pos);
 
 	if (debug_enabled) {
 		UtilityFunctions::print("[MapBuilder] Ready for dynamic streaming (", placements.size(), " placements)");
@@ -354,7 +316,7 @@ void MapBuilder::load_ide_file(const String &p_ide_path) {
 	// Register texture parents.
 	for (int i = 0; i < result.texture_parents.size(); i++) {
 		textures.add_parent(result.texture_parents[i].child_name,
-							result.texture_parents[i].parent_name);
+				result.texture_parents[i].parent_name);
 	}
 }
 
@@ -375,7 +337,7 @@ void MapBuilder::load_text_ipl(const String &p_ipl_path) {
 
 	if (debug_enabled && !ipl_placements.is_empty()) {
 		UtilityFunctions::print("[MapBuilder] Text IPL: ", p_ipl_path,
-								" -> ", ipl_placements.size(), " placements");
+				" -> ", ipl_placements.size(), " placements");
 	}
 
 	placements.append_array(ipl_placements);
@@ -441,8 +403,6 @@ MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
 
 	const ItemDefinition &def = definitions[placement.definition_id];
 
-	// No longer skipping shadow meshes (some buildings are flagged as shadows in GTA SA but we need them).
-
 	// Get the mesh (lazy DFF parse).
 	String model_name = def.model_name.to_lower();
 	Ref<ArrayMesh> mesh = models.get_mesh(model_name);
@@ -497,7 +457,7 @@ MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
 
 	// Apply materials to each surface.
 	for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
-		Ref<StandardMaterial3D> mat = create_material(materials[s], def.txd_name, def.flags, mesh, s);
+		Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, textures);
 		if (mat.is_valid()) {
 			instance->set_surface_override_material(s, mat);
 		}
@@ -507,71 +467,19 @@ MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
 }
 
 // =============================================================================
-// Transparency — uses alpha scissor for textures with alpha, regular alpha
-// blending only for material-level transparency
+// Streaming order — sorts placement indices by distance to camera
 // =============================================================================
 
-void MapBuilder::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode, bool is_additive) {
-	mat->set_transparency(BaseMaterial3D::TRANSPARENCY_DISABLED);
-	mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_OPAQUE_ONLY);
+void MapBuilder::sort_stream_order(const Vector3 &cam_pos) {
+	int32_t *ptr = stream_order.ptrw();
+	int count = stream_order.size();
+	const ItemPlacement *pl = placements.ptr();
 
-	if (is_additive) {
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-		mat->set_blend_mode(BaseMaterial3D::BLEND_MODE_ADD);
-		mat->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
-		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_DISABLED);
-	} else if (alpha_mode != Image::ALPHA_NONE) {
-		// Texture has alpha (trees, fences, etc.) — use scissor so shadows cast correctly
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
-		mat->set_alpha_scissor_threshold(0.5f);
-	} else if (is_transparent) {
-		// Material color has alpha < 1 but texture has no alpha
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
-	}
-}
+	std::sort(ptr, ptr + count, [pl, cam_pos](int32_t a, int32_t b) {
+		return pl[a].position.distance_squared_to(cam_pos) < pl[b].position.distance_squared_to(cam_pos);
+	});
 
-// =============================================================================
-// Material creation
-// =============================================================================
-
-Ref<StandardMaterial3D> MapBuilder::create_material(const DffMaterial &p_mat,
-													const String &p_txd_name, uint32_t p_flags,
-													const Ref<ArrayMesh> &p_mesh, int p_surface) {
-	Ref<StandardMaterial3D> mat;
-	mat.instantiate();
-
-	// Set base color from DFF material.
-	mat->set_albedo(p_mat.color);
-
-	// Culling.
-	if (p_flags & FLAG_FACE_CULLING_OFF) {
-		mat->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
-	} else {
-		mat->set_cull_mode(BaseMaterial3D::CULL_BACK);
-	}
-
-	// Apply texture if the material is textured.
-	Image::AlphaMode alpha_mode = Image::ALPHA_NONE;
-
-	if (p_mat.textured && !p_mat.texture_name.is_empty()) {
-		Ref<ImageTexture> tex;
-		bool has_alpha = false;
-		if (textures.get_texture(p_txd_name, p_mat.texture_name, tex, has_alpha)) {
-			mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
-
-			if (has_alpha) {
-				alpha_mode = Image::ALPHA_BIT;
-			}
-		}
-	}
-
-	// Apply transparency using proper alpha detection.
-	bool is_transparent = (p_flags & FLAG_DRAW_LAST) || (p_mat.color.a < 1.0f);
-	bool is_additive = (p_flags & FLAG_ALPHA_TRANSPARENCY);
-	apply_transparency(mat, is_transparent, alpha_mode, is_additive);
-
-	return mat;
+	last_sort_position = cam_pos;
 }
 
 // =============================================================================

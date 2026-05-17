@@ -8,6 +8,8 @@
 #include "classes/ipl_parser.h"
 #include "classes/item_definition.h"
 #include "classes/item_placement.h"
+#include "classes/map_material.h"
+#include "classes/map_water_loader.h"
 #include "classes/model_collection.h"
 #include "classes/texture_collection.h"
 
@@ -89,6 +91,8 @@ private:
 	// -- Streaming state --
 	int stream_process_index = 0;
 	Vector<MeshInstance3D *> spawned_nodes;
+	Vector<int32_t> stream_order; // Indices into placements, sorted by distance to camera
+	Vector3 last_sort_position; // Camera position at last stream_order sort
 
 	// -- Loading methods --
 	void load_map();
@@ -102,11 +106,9 @@ private:
 
 	// -- Spawning methods --
 	MeshInstance3D *spawn_placement(int32_t p_index);
-	Ref<StandardMaterial3D> create_material(const DffMaterial &p_mat, const String &p_txd_name,
-											uint32_t p_flags, const Ref<ArrayMesh> &p_mesh, int p_surface);
 
-	// -- Transparency helper --
-	static void apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode, bool is_additive = false);
+	// -- Streaming order --
+	void sort_stream_order(const Vector3 &cam_pos);
 };
 
 } // namespace godot

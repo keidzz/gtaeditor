@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://c1vwcdcdvb74a" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/Milkyway.jpg" id="9_mo32q"]
 [ext_resource type="Script" uid="uid://deo0gxkmk2ahd" path="res://addons/sky_3d/src/Sky3D.gd" id="10_6k6j1"]
 [ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="11_m335s"]
+[ext_resource type="Script" uid="uid://br6b4uik4d7ds" path="res://prefabs/fly/fly.gd" id="11_mlgqr"]
 [ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="12_sq6bu"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4b7dj"]
@@ -64,8 +65,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.32050732, 0.32050732)
-shader_parameter/cirrus_position2 = Vector2(0.32050732, 0.32050732)
+shader_parameter/cirrus_position1 = Vector2(0.11481052, 0.11481052)
+shader_parameter/cirrus_position2 = Vector2(0.11481052, 0.11481052)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -75,7 +76,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(1.6025649, 1.6025649)
+shader_parameter/cumulus_position = Vector2(0.5739843, 0.5739843)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -85,7 +86,7 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(0, 0.6677827, -0.74435616, -0.96049464, 0.2071532, 0.18584293, 0.2782985, 0.71495014, 0.64140177)
+shader_parameter/moon_matrix = Basis(0.95184594, -0.29470056, -0.08450403, 0.1286053, 0.634033, -0.7625371, 0.27829847, 0.7149502, 0.64140177)
 
 [sub_resource type="Sky" id="Sky_mlgqr"]
 sky_material = SubResource("ShaderMaterial_4b7dj")
@@ -122,6 +123,8 @@ dof_blur_far_enabled = true
 dof_blur_far_distance = 1200.0
 dof_blur_far_transition = 400.0
 dof_blur_amount = 0.05
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_wslke"]
 
 [node name="Map" type="Node3D" unique_id=143196836]
 
@@ -169,6 +172,14 @@ dome_path = NodePath("../SkyDome")
 current_time = 12.0
 
 [node name="MapBuilder" type="MapBuilder" parent="." unique_id=1997474710]
-streaming_distance = 1500.0
-draw_distance_multiplier = 3.0
+streaming_distance = 1000.0
+draw_distance_multiplier = 2.0
 load_interiors = true
+
+[node name="FlyCamera" type="CharacterBody3D" parent="." unique_id=2145340148]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2497.6367, 24.37539, 1669.6431)
+script = ExtResource("11_mlgqr")
+metadata/_custom_type_script = "uid://br6b4uik4d7ds"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlyCamera" unique_id=1600129928]
+shape = SubResource("SphereShape3D_wslke")
