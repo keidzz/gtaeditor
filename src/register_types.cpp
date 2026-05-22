@@ -1,4 +1,5 @@
 #include "register_types.h"
+#include "map_exporter.h"
 #include "map_builder.h"
 
 #include <gdextension_interface.h>
@@ -14,6 +15,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level) {
 	}
 
 	ClassDB::register_class<MapBuilder>();
+	ClassDB::register_class<MapExporter>();
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

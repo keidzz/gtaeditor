@@ -1,0 +1,159 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/export_scene.gd" id="1_export"]
+
+[node name="ExportScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_export")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 492.0
+offset_bottom = 534.0
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Blender Export"
+
+[node name="ExportDirRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ExportDirEdit" type="LineEdit" parent="PanelContainer/MarginContainer/VBoxContainer/ExportDirRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Export directory"
+
+[node name="BrowseExportButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/ExportDirRow"]
+layout_mode = 2
+text = "Browse"
+
+[node name="BlenderPathRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BlenderPathEdit" type="LineEdit" parent="PanelContainer/MarginContainer/VBoxContainer/BlenderPathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Blender executable"
+
+[node name="BrowseBlenderButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/BlenderPathRow"]
+layout_mode = 2
+text = "Browse"
+
+[node name="ButtonRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StartButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start Export"
+
+[node name="CancelButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Cancel"
+
+[node name="BackButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/ButtonRow"]
+layout_mode = 2
+text = "Back"
+
+[node name="RegionToolsRow" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RegionsLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/RegionToolsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Regions"
+
+[node name="SelectAllButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/RegionToolsRow"]
+layout_mode = 2
+text = "Select All"
+
+[node name="DeselectAllButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/RegionToolsRow"]
+layout_mode = 2
+text = "Deselect All"
+
+[node name="RegionsScroll" type="ScrollContainer" parent="PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="RegionsBox" type="VBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer/RegionsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProgressBar" type="ProgressBar" parent="PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+show_percentage = true
+
+[node name="CountLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Exported: 0 / 0   Remaining: 0"
+
+[node name="StatusLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Idle"
+autowrap_mode = 3
+
+[node name="MapExporter" type="MapExporter" parent="."]
+unique_name_in_owner = true
+
+[node name="ExportDirDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose Export Directory"
+size = Vector2i(900, 600)
+access = 2
+file_mode = 2
+
+[node name="BlenderDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose Blender Executable"
+size = Vector2i(900, 600)
+access = 2
+file_mode = 0
+
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/ExportDirRow/BrowseExportButton" to="." method="_on_browse_export_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/BlenderPathRow/BrowseBlenderButton" to="." method="_on_browse_blender_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/ButtonRow/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/ButtonRow/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/ButtonRow/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/RegionToolsRow/SelectAllButton" to="." method="_on_select_all_button_pressed"]
+[connection signal="pressed" from="PanelContainer/MarginContainer/VBoxContainer/RegionToolsRow/DeselectAllButton" to="." method="_on_deselect_all_button_pressed"]
+[connection signal="dir_selected" from="ExportDirDialog" to="." method="_on_export_dir_dialog_dir_selected"]
+[connection signal="file_selected" from="BlenderDialog" to="." method="_on_blender_dialog_file_selected"]
+[connection signal="export_progress" from="MapExporter" to="." method="_on_map_exporter_export_progress"]
+[connection signal="export_finished" from="MapExporter" to="." method="_on_map_exporter_export_finished"]

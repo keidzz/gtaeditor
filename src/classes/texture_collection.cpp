@@ -58,6 +58,16 @@ bool TextureCollection::get_texture(const String &p_txd_name, const String &p_te
 	return false;
 }
 
+bool TextureCollection::get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha) {
+	Ref<ImageTexture> texture;
+	if (!get_texture(p_txd_name, p_texture_name, texture, r_has_alpha) || texture.is_null()) {
+		return false;
+	}
+
+	r_image = texture->get_image();
+	return r_image.is_valid() && !r_image->is_empty();
+}
+
 int TextureCollection::get_txd_count() const {
 	return txd_entries.size();
 }

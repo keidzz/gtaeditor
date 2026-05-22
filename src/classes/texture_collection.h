@@ -4,6 +4,7 @@
 #include "../rw/txd_parser.h"
 #include "img_archive.h"
 
+#include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/variant/string.hpp>
@@ -27,6 +28,7 @@ public:
 	// Get a texture by TXD name and texture name.
 	// Tries the TXD first, then its parent if not found.
 	bool get_texture(const String &p_txd_name, const String &p_texture_name, Ref<ImageTexture> &r_tex, bool &r_has_alpha);
+	bool get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha);
 
 	// Stats.
 	int get_txd_count() const;

@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="11_m335s"]
 [ext_resource type="Script" uid="uid://br6b4uik4d7ds" path="res://prefabs/fly/fly.gd" id="11_mlgqr"]
 [ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="12_sq6bu"]
+[ext_resource type="Script" uid="uid://bkhjsok14lvhq" path="res://scripts/map_navigation.gd" id="13_export"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4b7dj"]
 shader = ExtResource("3_wslke")
@@ -65,8 +66,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.11481052, 0.11481052)
-shader_parameter/cirrus_position2 = Vector2(0.11481052, 0.11481052)
+shader_parameter/cirrus_position1 = Vector2(0.1776814, 0.1776814)
+shader_parameter/cirrus_position2 = Vector2(0.1776814, 0.1776814)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -76,7 +77,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(0.5739843, 0.5739843)
+shader_parameter/cumulus_position = Vector2(0.88841826, 0.88841826)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -175,6 +176,7 @@ current_time = 12.0
 streaming_distance = 1000.0
 draw_distance_multiplier = 2.0
 load_interiors = true
+load_collisions = false
 
 [node name="FlyCamera" type="CharacterBody3D" parent="." unique_id=2145340148]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2497.6367, 24.37539, 1669.6431)
@@ -183,3 +185,24 @@ metadata/_custom_type_script = "uid://br6b4uik4d7ds"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FlyCamera" unique_id=1600129928]
 shape = SubResource("SphereShape3D_wslke")
+
+[node name="ExportNavigation" type="Control" parent="." unique_id=1855623042]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("13_export")
+
+[node name="ExportButton" type="Button" parent="ExportNavigation" unique_id=1220976458]
+layout_mode = 1
+anchors_preset = -1
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 108.0
+offset_bottom = 43.0
+text = "Export"
+
+[connection signal="pressed" from="ExportNavigation/ExportButton" to="ExportNavigation" method="_on_export_button_pressed"]
