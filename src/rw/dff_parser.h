@@ -28,6 +28,27 @@ struct DffMaterial {
 	bool textured = false;
 };
 
+struct Dff2dfxLight {
+	Vector3 local_offset;
+	uint8_t red = 255;
+	uint8_t green = 255;
+	uint8_t blue = 255;
+	uint8_t alpha = 255;
+	float corona_far_clip = 0.0f;
+	float pointlight_range = 0.0f;
+	float corona_size = 0.0f;
+	float shadow_size = 0.0f;
+	uint8_t corona_show_mode = 0;
+	uint8_t corona_enable_reflection = 0;
+	uint8_t corona_flare_type = 0;
+	uint8_t shadow_color_multiplier = 0;
+	uint8_t flags = 0;
+	String corona_texture_name;
+	String shadow_texture_name;
+	uint8_t shadow_z_distance = 0;
+	uint8_t flags2 = 0;
+};
+
 // =============================================================================
 // DFF Parse Result — contains the mesh and per-surface material info.
 // =============================================================================
@@ -36,6 +57,7 @@ struct DffResult {
 	Ref<ArrayMesh> mesh;
 	Ref<ConcavePolygonShape3D> col_shape;
 	Vector<DffMaterial> materials; // One per mesh surface
+	Vector<Dff2dfxLight> lights;
 };
 
 // =============================================================================

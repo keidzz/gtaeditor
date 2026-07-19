@@ -62,12 +62,12 @@ shader_parameter/atm_darkness = 0.5
 shader_parameter/atm_sun_intensity = 18.0
 shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
 shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
-shader_parameter/atm_night_tint = Color(0.168627, 0.2, 0.25098, 1)
+shader_parameter/atm_night_tint = Color(0, 0, 0, 0)
 shader_parameter/atm_level_params = Vector3(1, 0, 0)
 shader_parameter/atm_thickness = 0.7
 shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
 shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
-shader_parameter/sun_light_color = Color(0.98, 0.523, 0.294, 1)
+shader_parameter/sun_light_color = Color(0.9993161, 0.98368955, 0.97585917, 1)
 shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
 shader_parameter/sun_disk_intensity = 30.0
 shader_parameter/sun_disk_size = 0.02
@@ -81,7 +81,7 @@ shader_parameter/moon_texture_flip_u = false
 shader_parameter/moon_texture_flip_v = false
 shader_parameter/moon_size = 0.07
 shader_parameter/atm_moon_mie_tint = Color(0.137255, 0.184314, 0.292196, 1)
-shader_parameter/atm_moon_mie_intensity = 0.7
+shader_parameter/atm_moon_mie_intensity = 0.0
 shader_parameter/atm_moon_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
 shader_parameter/starmap_color = Color(0.709804, 0.709804, 0.709804, 0.854902)
 shader_parameter/starmap_texture = ExtResource("9_mo32q")
@@ -89,7 +89,7 @@ shader_parameter/starmap_flip_u = false
 shader_parameter/starmap_flip_v = false
 shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
 shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -14.3969994293546
+shader_parameter/star_rotation = -10.367428711105791
 shader_parameter/star_tilt = -1.2915436464758039
 shader_parameter/star_field_color = Color(1, 1, 1, 1)
 shader_parameter/star_field_texture = ExtResource("8_c70he")
@@ -105,8 +105,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.66709924, 0.94522226)
-shader_parameter/cirrus_position2 = Vector2(0.66709924, 0.94522226)
+shader_parameter/cirrus_position1 = Vector2(0.1159512, 0.5586183)
+shader_parameter/cirrus_position2 = Vector2(0.1159512, 0.5586183)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -116,7 +116,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(3.3372328, -10.261738)
+shader_parameter/cumulus_position = Vector2(5.589233, -17.198824)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -126,7 +126,7 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(-0.91017944, 0.39816803, 0.11417284, -0.16131903, -0.08687089, -0.98307145, -0.38150936, -0.91318977, 0.14330018)
+shader_parameter/moon_matrix = Basis(0.40296227, -0.87976277, -0.2522679, 0.3906022, 0.41459003, -0.8219156, 0.82767844, 0.23266456, 0.5107013)
 
 [sub_resource type="Sky" id="Sky_mw3q6"]
 sky_material = SubResource("ShaderMaterial_mo32q")
@@ -135,13 +135,10 @@ sky_material = SubResource("ShaderMaterial_mo32q")
 background_mode = 2
 sky = SubResource("Sky_mw3q6")
 ambient_light_source = 3
-ambient_light_color = Color(0.23515604, 0.27890667, 0.35, 1)
-ambient_light_sky_contribution = 0.7
+ambient_light_color = Color(0.8822993, 0.86850256, 0.8615891, 1)
 reflected_light_source = 2
 tonemap_mode = 3
 sdfgi_use_occlusion = true
-glow_enabled = true
-glow_bloom = 0.3
 volumetric_fog_density = 0.0052
 adjustment_enabled = true
 adjustment_brightness = 1.06
@@ -160,7 +157,6 @@ draw_distance_multiplier = 2.0
 load_interiors = true
 
 [node name="ExportNavigation" type="Control" parent="." unique_id=1855623042]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -179,7 +175,7 @@ offset_bottom = 43.0
 text = "Export"
 
 [node name="Car" type="RigidBody3D" parent="." unique_id=432069324 node_paths=PackedStringArray("wheels", "skid_marks")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 24.37539, 1669.6431)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 13.612446, 1669.6431)
 mass = 50.0
 physics_material_override = SubResource("PhysicsMaterial_30iet")
 center_of_mass_mode = 1
@@ -330,11 +326,12 @@ draw_pass_1 = SubResource("QuadMesh_mniao")
 
 [node name="body" parent="Car" unique_id=618895872 instance=ExtResource("18_y2ir2")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+visible = false
 
 [node name="CameraPivot" type="Node3D" parent="Car" unique_id=648955449]
 
 [node name="Camera3D" type="Camera3D" parent="Car/CameraPivot" unique_id=1230860908]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2268.008, 26.203535, 1675.1805)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 16.761478, 1675.6721)
 top_level = true
 current = true
 script = ExtResource("19_5u2yt")
@@ -342,40 +339,57 @@ min_distance = 2.5
 max_distance = 5.0
 height = 1.5
 
+[node name="Lights" type="Node3D" parent="Car" unique_id=1204895158]
+
+[node name="SpotLight3D" type="SpotLight3D" parent="Car/Lights" unique_id=1183193812]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.54467773, -0.041119576, -2.2596436)
+spot_range = 15.0
+spot_angle = 50.0
+
+[node name="SpotLight3D2" type="SpotLight3D" parent="Car/Lights" unique_id=1755934924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.59350586, -0.041119576, -2.2596436)
+spot_range = 15.0
+spot_angle = 50.0
+
+[node name="GTAModelInstance" type="GTAModelInstance" parent="Car" unique_id=1092689174]
+map_builder_path = NodePath("../../MapBuilder")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4814253, 0)
+
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
 environment = SubResource("Environment_6k6j1")
 camera_attributes = SubResource("CameraAttributesPractical_m335s")
 script = ExtResource("10_6k6j1")
 editor_time_enabled = false
-current_time = 23.9998
+current_time = 8.65
 wind_direction = 0.3141592653589793
 
 [node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1207315250]
-transform = Transform3D(0.9656312, 0.25788632, 0.032419708, 0, 0.12473143, -0.9921906, -0.2599161, 0.9580902, 0.12044456, 0.032419704, -0.99219054, 0.12044455)
-light_color = Color(0.98, 0.523, 0.294, 1)
-light_energy = 0.0
+transform = Transform3D(0.6216477, -0.37825653, 0.6859126, 0, 0.8756738, 0.48290312, -0.78329694, -0.30019563, 0.5443606, 0.6859126, 0.48290312, 0.5443606)
+light_color = Color(0.9993161, 0.98368955, 0.97585917, 1)
+shadow_enabled = true
 directional_shadow_max_distance = 250.0
 
 [node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1257949493]
-transform = Transform3D(0, -0.924365, -0.38150936, 0.15502556, 0.3768971, -0.9131898, 0.98791045, -0.0591437, 0.14330019, -0.38150936, -0.9131898, 0.14330019)
+transform = Transform3D(0, -0.5612028, 0.8276783, 0.910012, 0.34314045, 0.23266453, -0.4145819, 0.7531972, 0.5107013, 0.8276783, 0.23266453, 0.5107013)
 light_color = Color(0.572549, 0.776471, 0.956863, 1)
 light_energy = 0.0
 
 [node name="SkyDome" type="Node" parent="Sky3D" unique_id=1011329888]
 script = ExtResource("11_m335s")
-sun_azimuth = -2.8786573
-sun_altitude = -3.0165355
-moon_azimuth = -4.3530803
-moon_altitude = -2.7218401
+sun_azimuth = -2.2416408
+sun_altitude = -1.0668293
+moon_azimuth = -2.123643
+moon_altitude = -1.3359798
 wind_direction = 0.3141592653589793
 
 [node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=184294769]
 script = ExtResource("12_sq6bu")
 editor_time_enabled = false
 dome_path = NodePath("../SkyDome")
-current_time = 23.9998
+current_time = 8.65
 
 [node name="Lights" type="Node3D" parent="." unique_id=450166390]
+visible = false
 
 [node name="SpotLight3D" type="SpotLight3D" parent="Lights" unique_id=1144681553]
 transform = Transform3D(1, 0, 0, 0, -0.24726985, 0.96894664, 0, -0.96894664, -0.24726985, 2490, 19.82653, 1656.1296)

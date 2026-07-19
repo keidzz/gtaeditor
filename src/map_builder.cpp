@@ -2,6 +2,7 @@
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
 #include <godot_cpp/classes/viewport.hpp>
@@ -22,6 +23,7 @@ MapBuilder::~MapBuilder() {
 	models.clear();
 	textures.clear();
 	spawned_nodes.clear();
+	spawned_lights.clear();
 }
 
 // =============================================================================
@@ -38,6 +40,8 @@ void MapBuilder::_process(double delta) {
 	// if (Engine::get_singleton()->is_editor_hint()) return;
 	if (!loaded)
 		return;
+
+	update_2dfx_lights();
 
 	int placements_count = placements.size();
 	if (placements_count == 0)
@@ -82,19 +86,20 @@ void MapBuilder::_process(double delta) {
 		if (in_range && spawned_nodes[i] == nullptr) {
 			if (placement.interior != 0 && !load_interiors) {
 				// Mark as skipped so we don't check again
-				spawned_nodes.write[i] = (MeshInstance3D *)1;
+				spawned_nodes.write[i] = (Node3D *)1;
 			} else {
-				MeshInstance3D *instance = spawn_placement(i);
+				Node3D *instance = spawn_placement(i);
 				if (instance) {
 					add_child(instance);
 					spawned_nodes.write[i] = instance;
 				} else {
-					// Use (MeshInstance3D*)1 as a marker to prevent retrying failed spawns every frame
-					spawned_nodes.write[i] = (MeshInstance3D *)1;
+					// Use (Node3D*)1 as a marker to prevent retrying failed spawns every frame.
+					spawned_nodes.write[i] = (Node3D *)1;
 				}
 			}
 		} else if (out_of_range && spawned_nodes[i] != nullptr) {
-			if (spawned_nodes[i] != (MeshInstance3D *)1) {
+			if (spawned_nodes[i] != (Node3D *)1) {
+				remove_2dfx_lights(spawned_nodes[i]);
 				spawned_nodes[i]->queue_free();
 			}
 			spawned_nodes.write[i] = nullptr;
@@ -176,7 +181,29 @@ void MapBuilder::load_map() {
 	}
 
 	loaded = true;
+	emit_signal("map_loaded");
 
+	int total_lights = 0;
+	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
+		total_lights += kv.value.lights.size();
+	}
+	UtilityFunctions::print("[MapBuilder]   2dfx Lights:  ", total_lights);
+	
+	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
+		if (kv.value.lights.size() > 0) {
+			UtilityFunctions::print("[MapBuilder]   Light def: id=", kv.key,
+					" model=", kv.value.model_name, " lights=", kv.value.lights.size());
+		}
+	}
+
+	int placements_with_lights = 0;
+	for (int i = 0; i < placements.size(); i++) {
+		if (definitions.has(placements[i].definition_id) &&
+				definitions[placements[i].definition_id].lights.size() > 0) {
+			placements_with_lights++;
+		}
+	}
+	UtilityFunctions::print("[MapBuilder]   Placements referencing lit defs: ", placements_with_lights);
 	if (debug_enabled) {
 		UtilityFunctions::print("[MapBuilder] ===== Loading Complete =====");
 		UtilityFunctions::print("[MapBuilder]   Definitions: ", definitions.size());
@@ -300,10 +327,17 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 void MapBuilder::load_ide_file(const String &p_ide_path) {
 	String resolved = path_resolver.resolve(p_ide_path);
 	if (resolved.is_empty()) {
+		UtilityFunctions::print("[MapBuilder] IDE no encontrado: ", p_ide_path);
 		return;
 	}
 
 	IdeResult result = IdeParser::parse(resolved);
+
+	int lights_in_file = 0;
+	for (const KeyValue<int32_t, ItemDefinition> &kv : result.definitions) {
+		lights_in_file += kv.value.lights.size();
+	}
+	UtilityFunctions::print("[MapBuilder] IDE: ", p_ide_path, " -> ", result.definitions.size(), " defs, ", lights_in_file, " luces 2dfx");
 
 	// Merge definitions.
 	for (const KeyValue<int32_t, ItemDefinition> &kv : result.definitions) {
@@ -334,7 +368,7 @@ void MapBuilder::load_text_ipl(const String &p_ipl_path) {
 
 	if (debug_enabled && !ipl_placements.is_empty()) {
 		UtilityFunctions::print("[MapBuilder] Text IPL: ", p_ipl_path,
-				" -> ", ipl_placements.size(), " placements");
+								" -> ", ipl_placements.size(), " placements");
 	}
 
 	placements.append_array(ipl_placements);
@@ -390,7 +424,7 @@ void MapBuilder::spawn_all() {
 // Spawn a single placement
 // =============================================================================
 
-MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
+Node3D *MapBuilder::spawn_placement(int32_t p_index) {
 	const ItemPlacement &placement = placements[p_index];
 
 	// Look up the item definition.
@@ -399,68 +433,150 @@ MeshInstance3D *MapBuilder::spawn_placement(int32_t p_index) {
 	}
 
 	const ItemDefinition &def = definitions[placement.definition_id];
+	Node3D *placement_root = memnew(Node3D);
+	placement_root->set_position(placement.position);
+	placement_root->set_quaternion(placement.rotation);
 
 	// Get the mesh (lazy DFF parse).
 	String model_name = def.model_name.to_lower();
 	Ref<ArrayMesh> mesh = models.get_mesh(model_name);
-	if (mesh.is_null() || mesh->get_surface_count() == 0) {
+	if (mesh.is_valid() && mesh->get_surface_count() > 0) {
+		// Get material info.
+		Vector<DffMaterial> materials = models.get_materials(model_name);
+
+		MeshInstance3D *instance = memnew(MeshInstance3D);
+		instance->set_mesh(mesh);
+		placement_root->add_child(instance);
+
+		bool is_lod = placement.lod_begin_distance >= 0.0f;
+
+		// Add static collision body if enabled (only for HD models, skip LODs).
+		if (load_collisions && !is_lod) {
+			ColModel col_model;
+			if (models.get_col_model(model_name, col_model)) {
+				StaticBody3D *body = memnew(StaticBody3D);
+				for (int i = 0; i < col_model.shapes.size(); i++) {
+					CollisionShape3D *col = memnew(CollisionShape3D);
+					col->set_shape(col_model.shapes[i].shape);
+					col->set_transform(col_model.shapes[i].transform);
+					body->add_child(col);
+				}
+				instance->add_child(body);
+			}
+		}
+
+		// Set visibility range for automatic distance culling.
+		if (is_lod) {
+			// This is a LOD model referenced by an HD model. It only becomes visible
+			// after the HD model disappears and stays visible to infinity.
+			float begin_dist = placement.lod_begin_distance;
+			instance->set_visibility_range_begin(begin_dist);
+			instance->set_visibility_range_begin_margin(begin_dist * 0.1f);
+			instance->set_cast_shadows_setting(GeometryInstance3D::SHADOW_CASTING_SETTING_OFF);
+		} else {
+			float vis_end = def.draw_distance * draw_distance_multiplier;
+			if (vis_end < streaming_distance) {
+				instance->set_visibility_range_end(vis_end);
+				instance->set_visibility_range_end_margin(vis_end * 0.1f);
+			}
+		}
+
+		// Apply materials to each surface.
+		for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
+			Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, textures);
+			if (mat.is_valid()) {
+				instance->set_surface_override_material(s, mat);
+			}
+		}
+	}
+
+	spawn_2dfx_lights(placement_root, def);
+	if (placement_root->get_child_count() == 0) {
+		memdelete(placement_root);
 		return nullptr;
 	}
+	return placement_root;
+}
 
-	// Get material info.
-	Vector<DffMaterial> materials = models.get_materials(model_name);
+void MapBuilder::spawn_2dfx_lights(Node3D *p_placement_root, const ItemDefinition &p_definition) {
+	auto spawn_one = [&](const Vector3 &p_offset, uint8_t p_r, uint8_t p_g, uint8_t p_b, uint8_t p_a, float p_range) {
+		OmniLight3D *light = memnew(OmniLight3D);
+		light->set_position(p_offset);
+		light->set_color(Color(p_r / 255.0f, p_g / 255.0f, p_b / 255.0f, p_a / 255.0f));
+		light->set_param(Light3D::PARAM_RANGE, MAX(p_range, 0.1f));
+		light->set_shadow(streetlight_shadows);
 
-	// Create the MeshInstance3D.
-	MeshInstance3D *instance = memnew(MeshInstance3D);
-	instance->set_mesh(mesh);
-	instance->set_position(placement.position);
-	instance->set_quaternion(placement.rotation);
+		float factor = MAX(last_night_light_factor, 0.0f);
+		light->set_param(Light3D::PARAM_ENERGY, streetlight_energy * factor);
+		light->set_visible(factor > 0.0f);
+		p_placement_root->add_child(light);
+		spawned_lights.push_back(light);
+	};
 
-	bool is_lod = placement.lod_begin_distance >= 0.0f;
+	// Legacy: 2dfx definido en texto en el IDE (herencia III/VC).
+	for (int i = 0; i < p_definition.lights.size(); i++) {
+		const TwoDFXLight &source = p_definition.lights[i];
+		spawn_one(source.local_offset, source.red, source.green, source.blue, source.alpha, source.pointlight_range);
+	}
 
-	// Add static collision body if enabled (only for HD models, skip LODs)
-	if (load_collisions && !is_lod) {
-		ColModel col_model;
-		if (models.get_col_model(model_name, col_model)) {
-			StaticBody3D *body = memnew(StaticBody3D);
-			for (int i = 0; i < col_model.shapes.size(); i++) {
-				CollisionShape3D *col = memnew(CollisionShape3D);
-				col->set_shape(col_model.shapes[i].shape);
-				col->set_transform(col_model.shapes[i].transform);
-				body->add_child(col);
-			}
-			instance->add_child(body);
+	// SA: 2dfx embebido en el propio DFF (farolas, neones, etc.)
+	Vector<Dff2dfxLight> dff_lights = models.get_2dfx_lights(p_definition.model_name.to_lower());
+	for (int i = 0; i < dff_lights.size(); i++) {
+		const Dff2dfxLight &source = dff_lights[i];
+		spawn_one(source.local_offset, source.red, source.green, source.blue, source.alpha, source.pointlight_range);
+	}
+}
+
+void MapBuilder::remove_2dfx_lights(Node3D *p_placement_root) {
+	for (int i = spawned_lights.size() - 1; i >= 0; i--) {
+		if (spawned_lights[i]->get_parent() == p_placement_root) {
+			spawned_lights.remove_at(i);
+		}
+	}
+}
+
+float MapBuilder::get_night_light_factor(float p_hour) const {
+	// GTA-style two-hour fades: 18:00-20:00 on, 05:00-07:00 off.
+	if (p_hour >= 20.0f || p_hour < 5.0f) {
+		return 1.0f;
+	}
+	if (p_hour >= 18.0f) {
+		return (p_hour - 18.0f) * 0.5f;
+	}
+	if (p_hour < 7.0f) {
+		return 1.0f - (p_hour - 5.0f) * 0.5f;
+	}
+	return 0.0f;
+}
+
+void MapBuilder::update_2dfx_lights() {
+	if (time_of_day == nullptr) {
+		Node *parent = get_parent();
+		if (parent) {
+			time_of_day = parent->find_child("TimeOfDay", true, false);
 		}
 	}
 
-	// Set visibility range for automatic distance culling.
-	if (is_lod) {
-		// This is a LOD model referenced by an HD model.
-		// It only becomes visible when the HD model disappears!
-		// Crucially, it has NO visibility_range_end, so it stays visible to infinity.
-		float begin_dist = placement.lod_begin_distance;
-		instance->set_visibility_range_begin(begin_dist);
-		instance->set_visibility_range_begin_margin(begin_dist * 0.1f);
-		// Disable shadows on LODs to greatly improve performance when looking at the city from afar.
-		instance->set_cast_shadows_setting(GeometryInstance3D::SHADOW_CASTING_SETTING_OFF);
-	} else {
-		// This is a standard/HD model. It disappears at its draw distance.
-		float vis_end = def.draw_distance * draw_distance_multiplier;
-		if (vis_end < streaming_distance) {
-			instance->set_visibility_range_end(vis_end);
-			instance->set_visibility_range_end_margin(vis_end * 0.1f);
+	// A map scene without Sky3D has no cycle to query; retain visible lights so
+	// the importer remains useful in standalone test scenes.
+	float factor = 1.0f;
+	if (time_of_day) {
+		Variant current_time = time_of_day->get("current_time");
+		if (current_time.get_type() == Variant::FLOAT || current_time.get_type() == Variant::INT) {
+			factor = get_night_light_factor(static_cast<float>(current_time));
 		}
 	}
 
-	// Apply materials to each surface.
-	for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
-		Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, textures);
-		if (mat.is_valid()) {
-			instance->set_surface_override_material(s, mat);
-		}
+	if (factor == last_night_light_factor) {
+		return;
 	}
-
-	return instance;
+	last_night_light_factor = factor;
+	for (int i = 0; i < spawned_lights.size(); i++) {
+		OmniLight3D *light = spawned_lights[i];
+		Color color = light->get_color();
+		light->set_param(Light3D::PARAM_ENERGY, streetlight_energy * factor);
+		light->set_visible(factor > 0.0f);
+	}
 }
 
 // =============================================================================
@@ -505,6 +621,41 @@ void MapBuilder::set_gta_path(const String &p_path) { gta_path = p_path; }
 String MapBuilder::get_gta_path() const { return gta_path; }
 
 // =============================================================================
+// Shared-resource access
+// =============================================================================
+
+bool MapBuilder::is_loaded() const {
+	return loaded;
+}
+
+ModelCollection *MapBuilder::get_model_collection() {
+	return &models;
+}
+
+TextureCollection *MapBuilder::get_texture_collection() {
+	return &textures;
+}
+
+bool MapBuilder::find_definition(int32_t p_id, ItemDefinition &r_definition) {
+	if (!definitions.has(p_id)) {
+		return false;
+	}
+	r_definition = definitions[p_id];
+	return true;
+}
+
+bool MapBuilder::find_definition_by_model_name(const String &p_model_name, ItemDefinition &r_definition) {
+	String target = p_model_name.to_lower();
+	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
+		if (kv.value.model_name.to_lower() == target) {
+			r_definition = kv.value;
+			return true;
+		}
+	}
+	return false;
+}
+
+// =============================================================================
 // Binding
 // =============================================================================
 
@@ -536,6 +687,8 @@ void MapBuilder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_gta_path", "path"), &MapBuilder::set_gta_path);
 	ClassDB::bind_method(D_METHOD("get_gta_path"), &MapBuilder::get_gta_path);
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "gta_path"), "set_gta_path", "get_gta_path");
+
+	ADD_SIGNAL(MethodInfo("map_loaded"));
 }
 
 } // namespace godot

@@ -12,6 +12,7 @@ struct ParsedGeometry {
 	Vector<Vector2> uvs;
 	Vector<Color> colors;
 	Vector<DffMaterial> materials;
+	Vector<Dff2dfxLight> lights;
 
 	// BinMesh sub-mesh data: indices grouped by material.
 	struct SubMesh {
@@ -51,6 +52,7 @@ public:
 	void parse_atomic();
 	void parse_material();
 	void parse_bin_mesh();
+	void parse_2dfx(int32_t size);
 	void parse_frame_name(int32_t size);
 	void parse_string_section(int32_t size, RWSectionType parent_type);
 };
@@ -86,6 +88,10 @@ void DffParserInternal::process_section(const RWSectionHeader &parent) {
 
 			case RWSectionType::BinMesh:
 				parse_bin_mesh();
+				break;
+
+			case RWSectionType::Effect2D:
+				parse_2dfx(header.size);
 				break;
 
 			case RWSectionType::Frame:
@@ -373,6 +379,54 @@ void DffParserInternal::parse_bin_mesh() {
 	}
 }
 
+
+void DffParserInternal::parse_2dfx(int32_t p_size) {
+	if (geometries.is_empty())
+		return;
+	ParsedGeometry &geom = geometries.ptrw()[geometries.size() - 1];
+
+	int64_t end = reader.get_position() + p_size;
+	int32_t entry_count = reader.read_int32();
+
+	for (int32_t i = 0; i < entry_count && reader.get_position() < end; i++) {
+		float gta_x = reader.read_float();
+		float gta_y = reader.read_float();
+		float gta_z = reader.read_float();
+		int32_t entry_type = reader.read_int32();
+		int32_t data_size = reader.read_int32();
+		int64_t entry_end = reader.get_position() + data_size;
+
+		if (entry_type == 0 && (data_size == 76 || data_size == 80)) {
+			Dff2dfxLight light;
+			light.local_offset = Vector3(gta_x, gta_z, -gta_y);
+
+			light.red = reader.read_uint8();
+			light.green = reader.read_uint8();
+			light.blue = reader.read_uint8();
+			light.alpha = reader.read_uint8();
+			light.corona_far_clip = reader.read_float();
+			light.pointlight_range = reader.read_float();
+			light.corona_size = reader.read_float();
+			light.shadow_size = reader.read_float();
+			light.corona_show_mode = reader.read_uint8();
+			light.corona_enable_reflection = reader.read_uint8();
+			light.corona_flare_type = reader.read_uint8();
+			light.shadow_color_multiplier = reader.read_uint8();
+			light.flags = reader.read_uint8();
+			light.corona_texture_name = reader.read_string(24);
+			light.shadow_texture_name = reader.read_string(24);
+			light.shadow_z_distance = reader.read_uint8();
+			light.flags2 = reader.read_uint8();
+
+			geom.lights.push_back(light);
+		}
+
+		// Entradas que no son luz (partículas, ped attractors, letreros...)
+		// simplemente se saltan usando su propio data_size.
+		reader.set_position(entry_end);
+	}
+}
+
 // =============================================================================
 // Frame name — extension section giving a frame its string name
 // =============================================================================
@@ -455,6 +509,8 @@ DffResult DffParser::parse(const PackedByteArray &p_data) {
 
 	for (int g = 0; g < active_geometries.size(); g++) {
 		const ParsedGeometry &geom = parser.geometries[active_geometries[g]];
+		
+		result.lights.append_array(geom.lights);
 
 		if (geom.vertices.is_empty()) {
 			continue;

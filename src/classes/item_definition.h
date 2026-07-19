@@ -1,7 +1,9 @@
 #ifndef ITEM_DEFINITION_H
 #define ITEM_DEFINITION_H
 
+#include <godot_cpp/templates/vector.hpp>
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/vector3.hpp>
 
 using namespace godot;
 
@@ -33,6 +35,39 @@ enum DefinitionFlags : uint32_t {
 	FLAG_FACE_CULLING_OFF = 1 << 21, // Draw both sides of polygons
 };
 
+// A GTA 2DFX light attached to a definition. Its local offset is already in
+// the same Godot coordinate space as IPL placement positions and rotations.
+struct TwoDFXLight {
+	Vector3 local_offset;
+	uint8_t red = 255;
+	uint8_t green = 255;
+	uint8_t blue = 255;
+	uint8_t alpha = 255;
+	float corona_far_clip = 0.0f;
+	float pointlight_range = 0.0f;
+	float corona_size = 0.0f;
+	float shadow_size = 0.0f;
+	uint8_t corona_show_mode = 0;
+	uint8_t corona_enable_reflection = 0;
+	uint8_t corona_flare_type = 0;
+	uint8_t shadow_color_multiplier = 0;
+	uint8_t flags = 0;
+	String corona_texture_name;
+	String shadow_texture_name;
+	uint8_t shadow_z_distance = 0;
+	uint8_t flags2 = 0;
+
+	// Flags from the GTA SA 2DFX light record.
+	bool corona_checks_obstacles = false;
+	bool fog_type_1 = false;
+	bool fog_type_2 = false;
+	bool without_corona = false;
+	bool corona_only_at_long_distance = false;
+	bool at_day = false;
+	bool at_night = false;
+	bool blinking = false;
+};
+
 // =============================================================================
 // ItemDefinition — Parsed from IDE files (OBJS, TOBJ, ANIM sections).
 // Maps a numeric ID to model name, texture name, draw distance, and flags.
@@ -48,6 +83,9 @@ struct ItemDefinition {
 	// TOBJ time-of-day fields (-1 = always visible)
 	int32_t time_on = -1;
 	int32_t time_off = -1;
+
+	// A model may have several effects, such as two heads on one lamp post.
+	Vector<TwoDFXLight> lights;
 };
 
 // =============================================================================

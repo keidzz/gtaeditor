@@ -40,6 +40,12 @@ bool BinaryReader::can_read(int32_t p_bytes) const {
 // -- Primitive reads ----------------------------------------------------------
 // All GTA binary data is little-endian. We use memcpy for safe unaligned reads.
 
+uint8_t BinaryReader::read_uint8() {
+	uint8_t val = ptr[pos];
+	pos += 1;
+	return val;
+}
+
 int16_t BinaryReader::read_int16() {
 	int16_t val;
 	memcpy(&val, ptr + pos, sizeof(val));

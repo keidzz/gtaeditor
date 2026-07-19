@@ -57,6 +57,62 @@ static IdeSection parse_section_name(const String &p_name) {
 	return IdeSection::UNKNOWN;
 }
 
+static uint8_t parse_byte(const String &p_value) {
+	return static_cast<uint8_t>(CLAMP(p_value.to_int(), 0, 255));
+}
+
+static void parse_2dfx_light(const PackedStringArray &p_tokens, IdeResult &r_result, const String &p_file_debug_name) {
+	constexpr int MIN_LIGHT_TOKENS = 22;
+	if (p_tokens.size() < 2 || p_tokens[1].to_int() != 0) {
+		return; // no es luz, ignorar sin más
+	}
+	if (p_tokens.size() < MIN_LIGHT_TOKENS) {
+		UtilityFunctions::print("[IdeParser] RECHAZADO (", p_tokens.size(), "/", MIN_LIGHT_TOKENS, " tokens) en ", p_file_debug_name, ": ", String(", ").join(p_tokens));
+		return;
+	}
+
+	int32_t definition_id = p_tokens[0].to_int();
+	if (!r_result.definitions.has(definition_id)) {
+		UtilityFunctions::print("[IdeParser] RECHAZADO (id ", definition_id, " no encontrado en el mismo archivo) en ", p_file_debug_name);
+		return;
+	}
+
+	TwoDFXLight light;
+	float gta_x = p_tokens[2].to_float();
+	float gta_y = p_tokens[3].to_float();
+	float gta_z = p_tokens[4].to_float();
+	// Match the IPL conversion: Godot(x, y, z) = GTA(x, z, -y).
+	light.local_offset = Vector3(gta_x, gta_z, -gta_y);
+	light.red = parse_byte(p_tokens[5]);
+	light.green = parse_byte(p_tokens[6]);
+	light.blue = parse_byte(p_tokens[7]);
+	light.alpha = parse_byte(p_tokens[8]);
+	light.corona_far_clip = p_tokens[9].to_float();
+	light.pointlight_range = p_tokens[10].to_float();
+	light.corona_size = p_tokens[11].to_float();
+	light.shadow_size = p_tokens[12].to_float();
+	light.corona_show_mode = parse_byte(p_tokens[13]);
+	light.corona_enable_reflection = parse_byte(p_tokens[14]);
+	light.corona_flare_type = parse_byte(p_tokens[15]);
+	light.shadow_color_multiplier = parse_byte(p_tokens[16]);
+	light.flags = parse_byte(p_tokens[17]);
+	light.corona_texture_name = p_tokens[18].to_lower();
+	light.shadow_texture_name = p_tokens[19].to_lower();
+	light.shadow_z_distance = parse_byte(p_tokens[20]);
+	light.flags2 = parse_byte(p_tokens[21]);
+
+	light.corona_checks_obstacles = (light.flags & (1 << 0)) != 0;
+	light.fog_type_1 = (light.flags & (1 << 1)) != 0;
+	light.fog_type_2 = (light.flags & (1 << 2)) != 0;
+	light.without_corona = (light.flags & (1 << 3)) != 0;
+	light.corona_only_at_long_distance = (light.flags & (1 << 4)) != 0;
+	light.at_day = (light.flags & (1 << 5)) != 0;
+	light.at_night = (light.flags & (1 << 6)) != 0;
+	light.blinking = (light.flags & (1 << 7)) != 0;
+
+	r_result.definitions[definition_id].lights.push_back(light);
+}
+
 IdeResult IdeParser::parse(const String &p_absolute_path) {
 	IdeResult result;
 
@@ -169,6 +225,10 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 				tp.parent_name = tokens[1].to_lower();
 				result.texture_parents.push_back(tp);
 			} break;
+
+			case IdeSection::_2DFX:
+				parse_2dfx_light(tokens, result, p_absolute_path.get_file());
+				break;
 
 			default:
 				// CARS, PEDS, WEAP, 2DFX, UNKNOWN — skip for map loading.

@@ -17,7 +17,7 @@ using namespace godot;
 //   TOBJ: Same as OBJS + TimeOn, TimeOff
 //   ANIM: ID, ModelName, TextureName, AnimName, DrawDist, Flags
 //   TXDP: TextureName, TextureParentName
-//   2DFX: Effect definitions (skipped for now)
+//   2DFX: Effect definitions attached to object definitions
 //
 // Lines between section headers and "end" are parsed per-section.
 // Comment character is '#'.

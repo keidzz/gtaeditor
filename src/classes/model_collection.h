@@ -38,6 +38,9 @@ public:
 	// Get material info for a model. Must call get_mesh() first.
 	Vector<DffMaterial> get_materials(const String &p_name);
 
+	Vector<Dff2dfxLight> get_2dfx_lights(const String &p_name);
+
+
 	// Stats.
 	int get_model_count() const;
 

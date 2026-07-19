@@ -25,6 +25,7 @@ public:
 	bool can_read(int32_t p_bytes) const;
 
 	// -- Primitive reads --
+	uint8_t read_uint8();
 	int16_t read_int16();
 	uint16_t read_uint16();
 	int32_t read_int32();

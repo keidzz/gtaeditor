@@ -73,6 +73,17 @@ Vector<DffMaterial> ModelCollection::get_materials(const String &p_name) {
 	return entry.result.materials;
 }
 
+Vector<Dff2dfxLight> ModelCollection::get_2dfx_lights(const String &p_name) {
+	String key = p_name.to_lower();
+	if (!dff_entries.has(key)) {
+		return Vector<Dff2dfxLight>();
+	}
+
+	DffEntry &entry = dff_entries[key];
+	ensure_loaded(entry);
+	return entry.result.lights;
+}
+
 int ModelCollection::get_model_count() const {
 	return dff_entries.size();
 }

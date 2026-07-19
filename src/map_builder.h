@@ -18,6 +18,7 @@
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/node3d.hpp>
+#include <godot_cpp/classes/omni_light3d.hpp>
 #include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
@@ -63,8 +64,32 @@ public:
 	void set_load_water(bool p_load);
 	bool get_load_water() const;
 
+	void set_streetlight_energy(float p_energy);
+	float get_streetlight_energy() const;
+
+	void set_streetlight_shadows(bool p_enabled);
+	bool get_streetlight_shadows() const;
+
 	void set_gta_path(const String &p_path);
 	String get_gta_path() const;
+
+	// -- Shared-resource access -------------------------------------------------
+	// Lets other nodes (e.g. GTAModelInstance) reuse the SAME ImgArchive-backed
+	// ModelCollection/TextureCollection and parsed IDE definitions instead of
+	// opening a second copy of the IMG archive / parsing IDE files again.
+	bool is_loaded() const;
+	ModelCollection *get_model_collection();
+	TextureCollection *get_texture_collection();
+
+	// Looks up a parsed IDE definition by its numeric id. Only OBJS/TOBJ/ANIM
+	// entries are indexed here — CARS (vehicle) entries are not currently
+	// parsed by IdeParser, so vehicle ids will return false. Use
+	// find_definition_by_model_name() instead for vehicles.
+	bool find_definition(int32_t p_id, ItemDefinition &r_definition);
+
+	// Looks up a parsed IDE definition by model (.dff) name, case-insensitive.
+	// Same OBJS/TOBJ/ANIM-only limitation as find_definition().
+	bool find_definition_by_model_name(const String &p_model_name, ItemDefinition &r_definition);
 
 protected:
 	static void _bind_methods();
@@ -77,6 +102,8 @@ private:
 	bool load_interiors = false;
 	bool load_collisions = true;
 	bool load_water = true;
+	float streetlight_energy = 1.0f;
+	bool streetlight_shadows = false;
 	String gta_path = "res://gta/";
 
 	// -- Internal state --
@@ -90,9 +117,12 @@ private:
 
 	// -- Streaming state --
 	int stream_process_index = 0;
-	Vector<MeshInstance3D *> spawned_nodes;
+	Vector<Node3D *> spawned_nodes;
+	Vector<OmniLight3D *> spawned_lights;
 	Vector<int32_t> stream_order; // Indices into placements, sorted by distance to camera
 	Vector3 last_sort_position; // Camera position at last stream_order sort
+	Node *time_of_day = nullptr;
+	float last_night_light_factor = -1.0f;
 
 	// -- Loading methods --
 	void load_map();
@@ -105,7 +135,11 @@ private:
 	void spawn_all();
 
 	// -- Spawning methods --
-	MeshInstance3D *spawn_placement(int32_t p_index);
+	Node3D *spawn_placement(int32_t p_index);
+	void spawn_2dfx_lights(Node3D *p_placement_root, const ItemDefinition &p_definition);
+	void remove_2dfx_lights(Node3D *p_placement_root);
+	void update_2dfx_lights();
+	float get_night_light_factor(float p_hour) const;
 
 	// -- Streaming order --
 	void sort_stream_order(const Vector3 &cam_pos);
