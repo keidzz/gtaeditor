@@ -1,59 +1,65 @@
-[gd_scene format=3 uid="uid://bv310bobncs2x"]
+[gd_scene format=3 uid="uid://ctpuq4nq3bv3o"]
 
-[ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="3_wslke"]
-[ext_resource type="Texture2D" uid="uid://cfqk60lpl5ljv" path="res://addons/sky_3d/assets/resources/SNoise.tres" id="4_gw3fx"]
-[ext_resource type="Texture2D" uid="uid://cecwdqjol0ckd" path="res://addons/sky_3d/assets/textures/noiseClouds.png" id="5_n1psn"]
-[ext_resource type="Texture2D" uid="uid://2r8ylu6rg5dp" path="res://addons/sky_3d/assets/thirdparty/textures/moon/MoonMap.png" id="6_c00ee"]
-[ext_resource type="Texture2D" uid="uid://djpfuyxkryegn" path="res://addons/sky_3d/assets/textures/noise.jpg" id="7_p7tei"]
-[ext_resource type="Texture2D" uid="uid://bm7dot7t7u1q4" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/StarField.jpg" id="8_c70he"]
-[ext_resource type="Texture2D" uid="uid://c1vwcdcdvb74a" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/Milkyway.jpg" id="9_mo32q"]
-[ext_resource type="Script" uid="uid://deo0gxkmk2ahd" path="res://addons/sky_3d/src/Sky3D.gd" id="10_6k6j1"]
-[ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="11_m335s"]
-[ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="12_sq6bu"]
-[ext_resource type="Script" uid="uid://bd04num4b253u" path="res://scenes/car.gd" id="13_6k6j1"]
-[ext_resource type="Script" uid="uid://bkhjsok14lvhq" path="res://scripts/map_navigation.gd" id="13_export"]
-[ext_resource type="Script" uid="uid://cykt6cqaqxnoq" path="res://scenes/wheel.gd" id="14_m335s"]
-[ext_resource type="Curve" uid="uid://cnr3llcr3drq5" path="res://assets/curves/car_tire_front.tres" id="15_sq6bu"]
-[ext_resource type="PackedScene" uid="uid://dej78jryo27we" path="res://blender/cars/lowpolybmw/wheel.glb" id="16_4b7dj"]
-[ext_resource type="Curve" uid="uid://cpjm6o4qmlec4" path="res://assets/curves/car_tire_back.tres" id="17_2cfcp"]
-[ext_resource type="PackedScene" uid="uid://vsibpbjhkj1b" path="res://blender/cars/lowpolybmw/body.glb" id="18_y2ir2"]
-[ext_resource type="Script" uid="uid://dlu7nesstlsye" path="res://scenes/followcamera.gd" id="19_5u2yt"]
+[ext_resource type="Script" uid="uid://bd04num4b253u" path="res://scenes/car.gd" id="1_o34ws"]
+[ext_resource type="Curve" uid="uid://cnr3llcr3drq5" path="res://assets/curves/car_tire_front.tres" id="3_1ywam"]
+[ext_resource type="Script" uid="uid://cykt6cqaqxnoq" path="res://scenes/wheel.gd" id="3_aoc7i"]
+[ext_resource type="PackedScene" uid="uid://dej78jryo27we" path="res://blender/cars/lowpolybmw/wheel.glb" id="4_klr1q"]
+[ext_resource type="PackedScene" uid="uid://vsibpbjhkj1b" path="res://blender/cars/lowpolybmw/body.glb" id="5_4vkub"]
+[ext_resource type="Texture2D" uid="uid://bxmfxpq07ogde" path="res://textures/Dark/texture_13.png" id="5_aoc7i"]
+[ext_resource type="Curve" uid="uid://cpjm6o4qmlec4" path="res://assets/curves/car_tire_back.tres" id="5_ba3wm"]
+[ext_resource type="Script" uid="uid://dlu7nesstlsye" path="res://scenes/followcamera.gd" id="5_klr1q"]
+[ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="9_14lfh"]
+[ext_resource type="Texture2D" uid="uid://cfqk60lpl5ljv" path="res://addons/sky_3d/assets/resources/SNoise.tres" id="10_h6jp1"]
+[ext_resource type="Texture2D" uid="uid://cecwdqjol0ckd" path="res://addons/sky_3d/assets/textures/noiseClouds.png" id="11_pjiup"]
+[ext_resource type="Texture2D" uid="uid://2r8ylu6rg5dp" path="res://addons/sky_3d/assets/thirdparty/textures/moon/MoonMap.png" id="12_5470c"]
+[ext_resource type="Texture2D" uid="uid://djpfuyxkryegn" path="res://addons/sky_3d/assets/textures/noise.jpg" id="13_5m22n"]
+[ext_resource type="Texture2D" uid="uid://bm7dot7t7u1q4" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/StarField.jpg" id="14_66k23"]
+[ext_resource type="Texture2D" uid="uid://c1vwcdcdvb74a" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/Milkyway.jpg" id="15_tu01l"]
+[ext_resource type="Script" uid="uid://deo0gxkmk2ahd" path="res://addons/sky_3d/src/Sky3D.gd" id="16_o817r"]
+[ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="17_faqco"]
+[ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="18_vshrl"]
+[ext_resource type="Script" uid="uid://br6b4uik4d7ds" path="res://prefabs/fly/fly.gd" id="19_h6jp1"]
 
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_30iet"]
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1ywam"]
 friction = 0.0
 
-[sub_resource type="Curve" id="Curve_mkblt"]
+[sub_resource type="Curve" id="Curve_vmfg8"]
 _data = [Vector2(0, 0.25925928), 0.0, 0.0, 0, 0, Vector2(0.29506314, 0.9126984), 0.0, 0.0, 0, 0, Vector2(0.5970149, 0.7910053), 0.0, 0.0, 0, 0, Vector2(1, 0.10582012), 0.0, 0.0, 0, 0]
 point_count = 4
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4o3w1"]
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_aoc7i"]
 points = PackedVector3Array(1.0095394, 0.3704304, 0.3834648, 1.0059819, 0.3704304, 0.48728824, 0.93265784, -0.5462717, 1.1382885, 0.93384373, -0.5337695, 1.014823, 0.93107677, -0.52796036, -0.20299649, 0.9237641, -0.5277078, -0.8380959, 0.9132892, -0.47580472, -1.7266738, 0.93858707, -0.100738555, -1.5873075, 0.9381918, -0.026104212, -1.5456846, 0.9374012, 0.0136755705, -1.4540207, 0.79411304, 0.21030116, -1.8538809, 0.6717745, 0.50732327, -1.2384237, 0.62019074, 0.578169, -1.1383418, 0.59943867, 0.62173736, -0.95828784, 0.5883709, 0.65368736, -0.7412877, 0.5352061, 0.6975082, -0.73707867, 0.55220306, 0.6895523, -0.4307531, 0.5257194, 0.70786357, -0.43028545, 0.5686071, 0.62944067, 0.22726226, 0.7383789, 0.16269171, 1.6531959, 0.78660274, 0.12935251, 1.6854653, 0.84431326, 0.051813602, 1.8491507, 0.93404126, 0.047646165, 1.6419721, 0.93404126, 3.6776066e-05, 1.7574868, 0.9350295, -0.034186423, 1.7228794, 0.92396176, -0.13268864, 1.8874998, 0.91684675, -0.27602202, 1.9090128, 0.53046274, 0.6940986, -0.08981967, 0.89846635, -0.53238034, 1.9174309, 0.7903578, -0.5359163, 2.120401, -0.9328555, -0.5462717, 1.1382885, 0.9041978, -0.5347797, -0.6196928, 0.9259381, -0.5292232, -0.6196928, 0.9020238, -0.5312438, -0.96015847, 0.9069648, -0.42781645, -1.7870036, 0.91309166, -0.3352496, -1.7594109, 0.9178349, -0.2693289, -1.7346243, 0.9308791, -0.16779584, -1.6471696, -0.9134869, -0.47580472, -1.7266738, 0.2598951, -0.41872394, -2.3575642, 0.49172556, -0.41872394, -2.3524199, 0.5152446, -0.41872394, -2.3500814, 0.8512306, -0.4508003, -1.9675252, 0.8678323, -0.39763436, -1.9637839, 0.9265311, -0.16261816, -1.6775682, 0.9350295, -0.08217469, -1.6074173, 0.8209919, -0.090004355, -2.126534, 0.81881785, 0.07467115, -1.9941826, 0.7986587, 0.1661014, -1.9184196, 0.7425293, 0.22343475, -2.016163, 0.74035525, 0.22697073, -2.0170984, 0.6976652, 0.2817784, -2.018034, 0.5802678, 0.5628886, -1.3081069, 0.56386375, 0.6155493, -1.1416154, 0.5415305, 0.6733879, -0.9395809, 0.5695952, 0.6491412, -0.9442576, 0.32946396, 0.7260487, -0.74082005, 0.32551122, 0.7305949, -0.42467332, 0.3170128, 0.6384069, 0.2726264, 0.37709498, 0.17367852, 1.9380088, 0.70319915, 0.10775781, 1.8996596, 0.32116318, 0.70647454, -0.06643605, 0.843325, -0.0040043592, 1.912754, 0.7605144, 0.05534959, 1.973084, 0.83304787, -0.16855356, 2.093276, 0.9190208, -0.20075619, 1.9272523, 0.8539976, -0.20568132, 2.0680218, 0.91388214, -0.27576944, 1.951571, 0.893723, -0.52732897, 1.9562478, 0.8593339, -0.5318752, 2.0263987, -0.7905555, -0.5359163, 2.120401, 0.87257564, -0.4566094, 2.0324783, 0.6707864, -0.42251247, 2.224224, 0.57433856, -0.50623935, 2.2780066, 0.33559084, -0.5133113, 2.3518987, 0, -0.51545817, 2.3808947, -0.89866394, -0.53238034, 1.9174309, -0.9170444, -0.27602202, 1.9090128, -1.0061795, 0.3704304, 0.48728824, -1.0095394, 0.3704304, 0.3834648, -0.9340413, -0.5337695, 1.014823, -0.93127435, -0.52796036, -0.20299649, -0.9261358, -0.5292232, -0.6196928, -0.92396176, -0.5277078, -0.8380959, -0.90439546, -0.5347797, -0.6196928, 0.9024191, -0.53326434, -0.76888037, -0.90222144, -0.5312438, -0.96015847, -0.93878466, -0.100738555, -1.5873075, -0.93107677, -0.16779584, -1.6471696, -0.9180326, -0.2693289, -1.7346243, -0.91328925, -0.3352496, -1.7594109, -0.9071624, -0.42781645, -1.7870036, -0.86802995, -0.39763436, -1.9637839, -0.8514283, -0.4508003, -1.9675252, -0.5154422, -0.41872394, -2.3500814, -0.49192315, -0.41872394, -2.3524199, -0.26009274, -0.41872394, -2.3575642, 0.26029038, -0.3146652, -2.3800125, 0.26048803, -0.2660455, -2.3903012, 0.493109, -0.31491774, -2.373465, 0.49389958, -0.26655063, -2.3828185, 0.5160351, -0.31504405, -2.3701913, 0.6433145, -0.25493243, -2.2986374, 0.78502166, -0.42390162, -2.1494498, 0.82454944, -0.43703526, -2.0676072, 0.841151, -0.38753158, -2.0648012, 0.79213655, -0.38260645, -2.146176, 0.8018209, -0.03292358, -2.1527236, 0.8288975, -0.38753158, -2.091926, 0.80004215, 0.059390664, -2.0657365, 0.7409482, 0.20575488, -2.0460942, 0.73877406, 0.20865941, -2.047965, 0.6215743, 0.30956107, -2.1213894, 0.47492623, 0.3578019, -2.2060382, 0.3263018, 0.69965506, -0.9456606, 0.32768524, 0.6376492, -1.209428, 0, 0.73918223, -0.7356756, 0, 0.74385476, -0.41531992, 0, 0.7127887, -0.9433223, 0, 0.71973443, -0.051470518, 0, 0.6515405, 0.29226875, 0.18281591, 0.17342597, 1.9468942, 0.34863496, 0.11773431, 2.0984201, 0.5565511, 0.014938414, 2.1550088, 0.7986587, -0.14645371, 2.1199331, 0.67236745, -0.38273275, 2.223289, -0.8332455, -0.16855356, 2.093276, -0.85419524, -0.20568132, 2.0680218, -0.8727733, -0.4566094, 2.0324783, -0.85953146, -0.5318752, 2.0263987, -0.33578843, -0.5133113, 2.3518987, -0.5745362, -0.50623935, 2.2780066, -0.67098397, -0.42251247, 2.224224, 0.36365557, -0.16590157, 2.3439484, 0.36859655, -0.29483846, 2.3439484, 0.23795724, -0.46027166, 2.3607845, 0.075695634, -0.45736712, 2.3743472, 0.022333145, -0.061211407, 2.3654613, -0.022530854, -0.061211407, 2.3654613, -0.07589334, -0.45736712, 2.3743472, -0.23815483, -0.46027166, 2.3607845, -0.8939206, -0.52732897, 1.9562478, -0.9140798, -0.27576944, 1.951571, -0.9192184, -0.20075619, 1.9272523, -0.92415935, -0.13268864, 1.8874998, -0.93522716, -0.034186423, 1.7228794, -0.934239, 3.6776066e-05, 1.7574868, -0.934239, 0.047646165, 1.6419721, -0.8445109, 0.051813602, 1.8491507, -0.7868004, 0.12935251, 1.6854653, -0.7385765, 0.16269171, 1.6531959, -0.5688047, 0.62944067, 0.22726226, -0.5306604, 0.6940986, -0.08981967, -0.52591705, 0.70786357, -0.43028545, -0.55240065, 0.6895523, -0.4307531, -0.5354037, 0.6975082, -0.73707867, -0.58856857, 0.65368736, -0.7412877, -0.5996363, 0.62173736, -0.95828784, -0.6203884, 0.578169, -1.1383418, -0.67197216, 0.50732327, -1.2384237, -0.7943106, 0.21030116, -1.8538809, -0.9375988, 0.0136755705, -1.4540207, -0.93838936, -0.026104212, -1.5456846, -0.90261674, -0.53326434, -0.76888037, -0.93522716, -0.08217469, -1.6074173, -0.92672867, -0.16261816, -1.6775682, -0.8211895, -0.090004355, -2.126534, -0.84134865, -0.38753158, -2.0648012, -0.824747, -0.43703526, -2.0676072, -0.6435121, -0.25493243, -2.2986374, -0.5162327, -0.31504405, -2.3701913, -0.49409717, -0.26655063, -2.3828185, -0.49330664, -0.31491774, -2.373465, -0.78521925, -0.42390162, -2.1494498, -0.26068568, -0.2660455, -2.3903012, -0.26048803, -0.3146652, -2.3800125, 0, -0.23573712, -2.3968487, 0.5164304, -0.26667693, -2.3795447, 0.24013126, 0.3124656, -2.2953637, 0.24625802, 0.3704304, -2.282269, 0.65438235, -0.1842129, -2.2972345, 0.77000105, -0.020926535, -2.1803162, 0.73205435, 0.14627469, -2.1129713, 0.61268055, 0.24881804, -2.1761072, 0.589952, 0.31764328, -2.1429024, 0.59845054, 0.20234519, -2.2036998, 0.47255456, 0.29592228, -2.2294219, 0, 0.6509092, -1.2300055, -0.32966167, 0.7260487, -0.74082005, -0.32570887, 0.7305949, -0.42467332, -0.3264994, 0.69965506, -0.9456606, -0.32136083, 0.70647454, -0.06643605, -0.31721038, 0.6384069, 0.2726264, -0.37729263, 0.17367852, 1.9380088, -0.18301362, 0.17342597, 1.9468942, -0.3488326, 0.11773431, 2.0984201, 0.13676608, 0.08123797, 2.1896167, 0.12609363, 0.05913812, 2.2401252, 0.29507482, -0.0018575191, 2.3135495, 0.32017493, 0.047141075, 2.224224, 0.36227202, 0.04158449, 2.214871, 0.7611073, -0.14253888, 2.1423817, 0.3195821, -0.03128189, 2.332724, 0.6450933, -0.14935824, 2.2013083, -0.6725651, -0.38273275, 2.223289, -0.7988563, -0.14645371, 2.1199331, -0.760712, 0.05534959, 1.973084, -0.8435227, -0.0040043592, 1.912754, -0.36385316, -0.16590157, 2.3439484, -0.36879414, -0.29483846, 2.3439484, 0.060872793, -0.0018575191, 2.3331919, -0.061070383, -0.0018575191, 2.3331919, -0.3197797, -0.03128189, 2.332724, -0.70339674, 0.10775781, 1.8996596, -0.54172814, 0.6733879, -0.9395809, -0.56979287, 0.6491412, -0.9442576, -0.56406134, 0.6155493, -1.1416154, -0.5804654, 0.5628886, -1.3081069, -0.69786286, 0.2817784, -2.018034, -0.7988563, 0.1661014, -1.9184196, -0.8190155, 0.07467115, -1.9941826, -0.7405529, 0.22697073, -2.0170984, -0.7427269, 0.22343475, -2.016163, -0.8020185, -0.03292358, -2.1527236, -0.79233426, -0.38260645, -2.146176, -0.82909507, -0.38753158, -2.091926, -0.65457994, -0.1842129, -2.2972345, -0.516628, -0.26667693, -2.3795447, -0.24645567, 0.3704304, -2.282269, -0.24032885, 0.3124656, -2.2953637, 0, 0.3124656, -2.300508, 0.5411352, -0.24129367, -2.3645792, 0, 0.36323214, -2.2888162, 0.6000316, -0.16034505, -2.3196826, -0.3278829, 0.6376492, -1.209428, -0.55674875, 0.014938414, 2.1550088, -0.36246967, 0.04158449, 2.214871, -0.32037264, 0.047141075, 2.224224, -0.29527247, -0.0018575191, 2.3135495, -0.12629122, 0.05913812, 2.2401252, -0.13696373, 0.08123797, 2.1896167, 0.107120275, -0.0018575191, 2.3294506, -0.6452909, -0.14935824, 2.2013083, -0.761305, -0.14253888, 2.1423817, -0.107317924, -0.0018575191, 2.3294506, -0.47512382, 0.3578019, -2.2060382, -0.62177193, 0.30956107, -2.1213894, -0.7389717, 0.20865941, -2.047965, -0.7411458, 0.20575488, -2.0460942, -0.8002398, 0.059390664, -2.0657365, -0.732252, 0.14627469, -2.1129713, -0.7701987, -0.020926535, -2.1803162, -0.5986482, 0.20234519, -2.2036998, -0.60022926, -0.16034505, -2.3196826, -0.54133284, -0.24129367, -2.3645792, -0.4727522, 0.29592228, -2.2294219, -0.61287814, 0.24881804, -2.1761072, -0.59014964, 0.31764328, -2.1429024)
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_6ek7f"]
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1np08"]
 height = 0.2
 radius = 0.36
 
-[sub_resource type="Gradient" id="Gradient_4qxv8"]
+[sub_resource type="Gradient" id="Gradient_aoc7i"]
 colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 0.39215687)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_bcnil"]
-gradient = SubResource("Gradient_4qxv8")
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_pjiup"]
+gradient = SubResource("Gradient_aoc7i")
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_fq663"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_r8olw"]
 gravity = Vector3(0, 0, 0)
-color_ramp = SubResource("GradientTexture1D_bcnil")
+color_ramp = SubResource("GradientTexture1D_pjiup")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85vx5"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5470c"]
 transparency = 1
 vertex_color_use_as_albedo = true
 
-[sub_resource type="QuadMesh" id="QuadMesh_mniao"]
-material = SubResource("StandardMaterial3D_85vx5")
+[sub_resource type="QuadMesh" id="QuadMesh_uxkab"]
+material = SubResource("StandardMaterial3D_5470c")
 size = Vector2(0.6, 1)
 orientation = 1
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_mo32q"]
-shader = ExtResource("3_wslke")
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_klr1q"]
+albedo_texture = ExtResource("5_aoc7i")
+uv1_scale = Vector3(0.2, 0.2, 0.2)
+uv1_triplanar = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_w1uij"]
+shader = ExtResource("9_14lfh")
 shader_parameter/sky_visible = true
 shader_parameter/color_correction = Vector2(0, 1)
 shader_parameter/ground_color = Color(0.3, 0.3, 0.3, 1)
@@ -62,12 +68,12 @@ shader_parameter/atm_darkness = 0.5
 shader_parameter/atm_sun_intensity = 18.0
 shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
 shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
-shader_parameter/atm_night_tint = Color(0.168627, 0.2, 0.25098, 1)
+shader_parameter/atm_night_tint = Color(0, 0, 0, 0)
 shader_parameter/atm_level_params = Vector3(1, 0, 0)
 shader_parameter/atm_thickness = 0.7
 shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
 shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
-shader_parameter/sun_light_color = Color(0.98, 0.523, 0.294, 1)
+shader_parameter/sun_light_color = Color(0.99999833, 0.99996, 0.99994075, 1)
 shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
 shader_parameter/sun_disk_intensity = 30.0
 shader_parameter/sun_disk_size = 0.02
@@ -75,27 +81,27 @@ shader_parameter/atm_sun_mie_tint = Color(1, 1, 1, 1)
 shader_parameter/atm_sun_mie_intensity = 1.0
 shader_parameter/atm_sun_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
 shader_parameter/moon_color = Color(1, 1, 1, 1)
-shader_parameter/moon_texture = ExtResource("6_c00ee")
+shader_parameter/moon_texture = ExtResource("12_5470c")
 shader_parameter/moon_texture_alignment = Vector3(7, 1.4, 4.8)
 shader_parameter/moon_texture_flip_u = false
 shader_parameter/moon_texture_flip_v = false
 shader_parameter/moon_size = 0.07
 shader_parameter/atm_moon_mie_tint = Color(0.137255, 0.184314, 0.292196, 1)
-shader_parameter/atm_moon_mie_intensity = 0.7
+shader_parameter/atm_moon_mie_intensity = 0.0
 shader_parameter/atm_moon_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
 shader_parameter/starmap_color = Color(0.709804, 0.709804, 0.709804, 0.854902)
-shader_parameter/starmap_texture = ExtResource("9_mo32q")
+shader_parameter/starmap_texture = ExtResource("15_tu01l")
 shader_parameter/starmap_flip_u = false
 shader_parameter/starmap_flip_v = false
 shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
 shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -14.3969994293546
+shader_parameter/star_rotation = -10.393680328183862
 shader_parameter/star_tilt = -1.2915436464758039
 shader_parameter/star_field_color = Color(1, 1, 1, 1)
-shader_parameter/star_field_texture = ExtResource("8_c70he")
+shader_parameter/star_field_texture = ExtResource("14_66k23")
 shader_parameter/star_scintillation = 0.75
 shader_parameter/star_scintillation_speed = 0.01
-shader_parameter/noise_tex = ExtResource("7_p7tei")
+shader_parameter/noise_tex = ExtResource("13_5m22n")
 shader_parameter/clouds_night_color = Color(0.090196, 0.094118, 0.129412, 1)
 shader_parameter/cirrus_visible = true
 shader_parameter/cirrus_intensity = 2.0
@@ -105,9 +111,9 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.66709924, 0.94522226)
-shader_parameter/cirrus_position2 = Vector2(0.66709924, 0.94522226)
-shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
+shader_parameter/cirrus_position1 = Vector2(0.0289557, 0.0289557)
+shader_parameter/cirrus_position2 = Vector2(0.0289557, 0.0289557)
+shader_parameter/cirrus_texture = ExtResource("10_h6jp1")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
 shader_parameter/cumulus_coverage = 0.55
@@ -116,8 +122,8 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(3.3372328, -10.261738)
-shader_parameter/cumulus_texture = ExtResource("5_n1psn")
+shader_parameter/cumulus_position = Vector2(0.1447795, 0.1447795)
+shader_parameter/cumulus_texture = ExtResource("11_pjiup")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
 shader_parameter/show_azimuthal_grid = false
@@ -126,80 +132,56 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(-0.91017944, 0.39816803, 0.11417284, -0.16131903, -0.08687089, -0.98307145, -0.38150936, -0.91318977, 0.14330018)
+shader_parameter/moon_matrix = Basis(0.42590028, -0.8697208, -0.24938846, 0.3859529, 0.4239415, -0.81933755, 0.818321, 0.25270388, 0.5162281)
 
-[sub_resource type="Sky" id="Sky_mw3q6"]
-sky_material = SubResource("ShaderMaterial_mo32q")
+[sub_resource type="Sky" id="Sky_chyyc"]
+sky_material = SubResource("ShaderMaterial_w1uij")
 
-[sub_resource type="Environment" id="Environment_6k6j1"]
+[sub_resource type="Environment" id="Environment_4ylw0"]
 background_mode = 2
-sky = SubResource("Sky_mw3q6")
+sky = SubResource("Sky_chyyc")
 ambient_light_source = 3
-ambient_light_color = Color(0.23515604, 0.27890667, 0.35, 1)
-ambient_light_sky_contribution = 0.7
+ambient_light_color = Color(0.8999566, 0.8999221, 0.8999047, 1)
 reflected_light_source = 2
 tonemap_mode = 3
-sdfgi_use_occlusion = true
+tonemap_white = 6.0
+sdfgi_enabled = true
 glow_enabled = true
-glow_bloom = 0.3
-volumetric_fog_density = 0.0052
-adjustment_enabled = true
-adjustment_brightness = 1.06
+glow_bloom = 0.15
+fog_sky_affect = 0.0
+volumetric_fog_density = 0.0
+adjustment_brightness = 1.15
+adjustment_contrast = 1.05
+adjustment_saturation = 1.09
 
-[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_m335s"]
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_poxpw"]
 
-[node name="Map" type="Node3D" unique_id=143196836]
+[sub_resource type="SphereShape3D" id="SphereShape3D_5m22n"]
 
-[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1417168564]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 26.316671, 1669.6431)
-use_collision = true
+[node name="Example" type="Node3D" unique_id=1884949440]
 
-[node name="MapBuilder" type="MapBuilder" parent="." unique_id=1997474710]
-streaming_distance = 1000.0
-draw_distance_multiplier = 2.0
-load_interiors = true
-
-[node name="ExportNavigation" type="Control" parent="." unique_id=1855623042]
-visible = false
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("13_export")
-
-[node name="ExportButton" type="Button" parent="ExportNavigation" unique_id=1220976458]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 12.0
-offset_top = 12.0
-offset_right = 108.0
-offset_bottom = 43.0
-text = "Export"
-
-[node name="Car" type="RigidBody3D" parent="." unique_id=432069324 node_paths=PackedStringArray("wheels", "skid_marks")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 24.37539, 1669.6431)
+[node name="Car" type="RigidBody3D" parent="." unique_id=1011377738 node_paths=PackedStringArray("wheels", "skid_marks")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.385894, 0)
 mass = 50.0
-physics_material_override = SubResource("PhysicsMaterial_30iet")
+physics_material_override = SubResource("PhysicsMaterial_1ywam")
 center_of_mass_mode = 1
 center_of_mass = Vector3(0, -0.5, 0)
 linear_damp_mode = 1
-script = ExtResource("13_6k6j1")
+script = ExtResource("1_o34ws")
 wheels = [NodePath("WheelFL"), NodePath("WheelRL"), NodePath("WheelFR"), NodePath("WheelRR")]
 max_speed = 60.0
-accel_curve = SubResource("Curve_mkblt")
+accel_curve = SubResource("Curve_vmfg8")
 tire_max_turn_degrees = 12
 skid_marks = [NodePath("Skidmarks/GPUParticles3D"), NodePath("Skidmarks/GPUParticles3D2"), NodePath("Skidmarks/GPUParticles3D3"), NodePath("Skidmarks/GPUParticles3D4")]
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="Car" unique_id=848908342]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Car" unique_id=46974441]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0.041270256, 0)
-shape = SubResource("ConvexPolygonShape3D_4o3w1")
+shape = SubResource("ConvexPolygonShape3D_aoc7i")
 
-[node name="WheelFL" type="RayCast3D" parent="Car" unique_id=708784753 node_paths=PackedStringArray("shapecast")]
+[node name="WheelFL" type="RayCast3D" parent="Car" unique_id=116071556 node_paths=PackedStringArray("shapecast")]
 process_physics_priority = -1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.855, -0.4694767, -1.53)
-script = ExtResource("14_m335s")
+script = ExtResource("3_aoc7i")
 shapecast = NodePath("ShapeCast3D")
 spring_strength = 5000.0
 spring_damping = 120.0
@@ -208,23 +190,23 @@ over_extend = 0.08
 wheel_radius = 0.34
 z_brake_traction = 0.5
 is_steer = true
-grip_curve = ExtResource("15_sq6bu")
+grip_curve = ExtResource("3_1ywam")
 
-[node name="wheel" parent="Car/WheelFL" unique_id=1322368390 instance=ExtResource("16_4b7dj")]
+[node name="wheel" parent="Car/WheelFL" unique_id=549318589 instance=ExtResource("4_klr1q")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
-[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFL" unique_id=647583919]
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFL" unique_id=477089525]
 process_physics_priority = -1
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("CylinderShape3D_6ek7f")
+shape = SubResource("CylinderShape3D_1np08")
 target_position = Vector3(0, 0, 0)
 max_results = 3
 debug_shape_custom_color = Color(1, 0, 0, 1)
 
-[node name="WheelRL" type="RayCast3D" parent="Car" unique_id=448684433 node_paths=PackedStringArray("shapecast")]
+[node name="WheelRL" type="RayCast3D" parent="Car" unique_id=1061976926 node_paths=PackedStringArray("shapecast")]
 process_physics_priority = -1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.855, -0.4694767, 1.3409159)
-script = ExtResource("14_m335s")
+script = ExtResource("3_aoc7i")
 shapecast = NodePath("ShapeCast3D")
 spring_strength = 5000.0
 spring_damping = 120.0
@@ -233,23 +215,23 @@ over_extend = 0.08
 wheel_radius = 0.34
 z_brake_traction = 0.5
 is_motor = true
-grip_curve = ExtResource("17_2cfcp")
+grip_curve = ExtResource("5_ba3wm")
 
-[node name="wheel" parent="Car/WheelRL" unique_id=666429941 instance=ExtResource("16_4b7dj")]
+[node name="wheel" parent="Car/WheelRL" unique_id=2016120455 instance=ExtResource("4_klr1q")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
-[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRL" unique_id=599906813]
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRL" unique_id=1434006096]
 process_physics_priority = -1
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("CylinderShape3D_6ek7f")
+shape = SubResource("CylinderShape3D_1np08")
 target_position = Vector3(0, 0, 0)
 max_results = 3
 debug_shape_custom_color = Color(1, 0, 0, 1)
 
-[node name="WheelFR" type="RayCast3D" parent="Car" unique_id=49691403 node_paths=PackedStringArray("shapecast")]
+[node name="WheelFR" type="RayCast3D" parent="Car" unique_id=872226265 node_paths=PackedStringArray("shapecast")]
 process_physics_priority = -1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8545952, -0.4694767, -1.5299997)
-script = ExtResource("14_m335s")
+script = ExtResource("3_aoc7i")
 shapecast = NodePath("ShapeCast3D")
 spring_strength = 5000.0
 spring_damping = 120.0
@@ -258,22 +240,22 @@ over_extend = 0.08
 wheel_radius = 0.34
 z_brake_traction = 0.5
 is_steer = true
-grip_curve = ExtResource("15_sq6bu")
+grip_curve = ExtResource("3_1ywam")
 
-[node name="wheel" parent="Car/WheelFR" unique_id=1309874153 instance=ExtResource("16_4b7dj")]
+[node name="wheel" parent="Car/WheelFR" unique_id=404286278 instance=ExtResource("4_klr1q")]
 
-[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFR" unique_id=29380932]
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFR" unique_id=1818009842]
 process_physics_priority = -1
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("CylinderShape3D_6ek7f")
+shape = SubResource("CylinderShape3D_1np08")
 target_position = Vector3(0, 0, 0)
 max_results = 3
 debug_shape_custom_color = Color(1, 0, 0, 1)
 
-[node name="WheelRR" type="RayCast3D" parent="Car" unique_id=313342305 node_paths=PackedStringArray("shapecast")]
+[node name="WheelRR" type="RayCast3D" parent="Car" unique_id=2015025222 node_paths=PackedStringArray("shapecast")]
 process_physics_priority = -1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8545952, -0.4694767, 1.3499999)
-script = ExtResource("14_m335s")
+script = ExtResource("3_aoc7i")
 shapecast = NodePath("ShapeCast3D")
 spring_strength = 5000.0
 spring_damping = 120.0
@@ -282,185 +264,144 @@ over_extend = 0.08
 wheel_radius = 0.34
 z_brake_traction = 0.5
 is_motor = true
-grip_curve = ExtResource("17_2cfcp")
+grip_curve = ExtResource("5_ba3wm")
 
-[node name="wheel" parent="Car/WheelRR" unique_id=1119983313 instance=ExtResource("16_4b7dj")]
+[node name="wheel" parent="Car/WheelRR" unique_id=1961074936 instance=ExtResource("4_klr1q")]
 
-[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRR" unique_id=905607766]
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRR" unique_id=1590354482]
 process_physics_priority = -1
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("CylinderShape3D_6ek7f")
+shape = SubResource("CylinderShape3D_1np08")
 target_position = Vector3(0, 0, 0)
 max_results = 3
 debug_shape_custom_color = Color(1, 0, 0, 1)
 
-[node name="Skidmarks" type="Node3D" parent="Car" unique_id=840405259]
+[node name="Skidmarks" type="Node3D" parent="Car" unique_id=1623203309]
 
-[node name="GPUParticles3D" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=77791190]
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=1653946633]
 emitting = false
 amount = 150
 lifetime = 1.5
 fixed_fps = 60
-process_material = SubResource("ParticleProcessMaterial_fq663")
-draw_pass_1 = SubResource("QuadMesh_mniao")
+process_material = SubResource("ParticleProcessMaterial_r8olw")
+draw_pass_1 = SubResource("QuadMesh_uxkab")
 
-[node name="GPUParticles3D2" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=225355163]
+[node name="GPUParticles3D2" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=1308771904]
 emitting = false
 amount = 150
 lifetime = 1.5
 fixed_fps = 60
-process_material = SubResource("ParticleProcessMaterial_fq663")
-draw_pass_1 = SubResource("QuadMesh_mniao")
+process_material = SubResource("ParticleProcessMaterial_r8olw")
+draw_pass_1 = SubResource("QuadMesh_uxkab")
 
-[node name="GPUParticles3D3" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=1448064277]
+[node name="GPUParticles3D3" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=557890587]
 emitting = false
 amount = 150
 lifetime = 1.5
 fixed_fps = 60
-process_material = SubResource("ParticleProcessMaterial_fq663")
-draw_pass_1 = SubResource("QuadMesh_mniao")
+process_material = SubResource("ParticleProcessMaterial_r8olw")
+draw_pass_1 = SubResource("QuadMesh_uxkab")
 
-[node name="GPUParticles3D4" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=842482957]
+[node name="GPUParticles3D4" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=1382181022]
 emitting = false
 amount = 150
 lifetime = 1.5
 fixed_fps = 60
-process_material = SubResource("ParticleProcessMaterial_fq663")
-draw_pass_1 = SubResource("QuadMesh_mniao")
+process_material = SubResource("ParticleProcessMaterial_r8olw")
+draw_pass_1 = SubResource("QuadMesh_uxkab")
 
-[node name="body" parent="Car" unique_id=618895872 instance=ExtResource("18_y2ir2")]
+[node name="body" parent="Car" unique_id=797996442 instance=ExtResource("5_4vkub")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
-[node name="CameraPivot" type="Node3D" parent="Car" unique_id=648955449]
+[node name="CameraPivot" type="Node3D" parent="Car" unique_id=2010121901]
 
-[node name="Camera3D" type="Camera3D" parent="Car/CameraPivot" unique_id=1230860908]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2268.008, 26.203535, 1675.1805)
+[node name="Camera3D" type="Camera3D" parent="Car/CameraPivot" unique_id=1559094301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.646, 5.055)
 top_level = true
 current = true
-script = ExtResource("19_5u2yt")
-min_distance = 2.5
-max_distance = 5.0
-height = 1.5
+script = ExtResource("5_klr1q")
 
-[node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
-environment = SubResource("Environment_6k6j1")
-camera_attributes = SubResource("CameraAttributesPractical_m335s")
-script = ExtResource("10_6k6j1")
+[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=2009689077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51.44183, 0.59875107, -68.50345)
+material_override = SubResource("StandardMaterial3D_klr1q")
+use_collision = true
+size = Vector3(311.25208, 0.12060547, 313.62573)
+
+[node name="CSGPolygon3D" type="CSGPolygon3D" parent="." unique_id=1898392488]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -0.047902107, 0.63697386, -28.24783)
+use_collision = true
+polygon = PackedVector2Array(0, 0, 8, 2.666, 8, 0)
+depth = 8.0
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="." unique_id=1869384607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.09087658, -7.7690554)
+use_collision = true
+size = Vector3(4.0543213, 1.4904938, 0.11743164)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="." unique_id=820321671]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.09087658, -8.138753)
+use_collision = true
+size = Vector3(4.0543213, 1.4904938, 0.11743164)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="." unique_id=1666902583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.09087658, -8.714885)
+use_collision = true
+size = Vector3(4.0543213, 1.4904938, 0.11743164)
+
+[node name="CSGBox3D5" type="CSGBox3D" parent="." unique_id=704650850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.17332935, -9.486577)
+use_collision = true
+size = Vector3(4.0543213, 1.6553993, 0.11743164)
+
+[node name="CSGBox3D6" type="CSGBox3D" parent="." unique_id=29274763]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.08025074, -10.256386)
+use_collision = true
+size = Vector3(4.0543213, 1.4692421, 0.11743164)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="." unique_id=422743350]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8824334, 0.084826946, -10.875955)
+use_collision = true
+size = Vector3(4.0543213, 1.4783945, 0.11743164)
+
+[node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1105594913]
+environment = SubResource("Environment_4ylw0")
+camera_attributes = SubResource("CameraAttributesPractical_poxpw")
+script = ExtResource("16_o817r")
 editor_time_enabled = false
-current_time = 23.9998
-wind_direction = 0.3141592653589793
+current_time = 8.75
+wind_direction = 2.35619451204804
+metadata/_custom_type_script = "uid://deo0gxkmk2ahd"
 
-[node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1207315250]
-transform = Transform3D(0.9656312, 0.25788632, 0.032419708, 0, 0.12473143, -0.9921906, -0.2599161, 0.9580902, 0.12044456, 0.032419704, -0.99219054, 0.12044455)
-light_color = Color(0.98, 0.523, 0.294, 1)
-light_energy = 0.0
-directional_shadow_max_distance = 250.0
+[node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=2065285067]
+transform = Transform3D(0.63419586, -0.38655382, 0.66960573, 0, 0.86604965, 0.4999581, -0.77317244, -0.31707135, 0.5492451, 0.6696057, 0.49995807, 0.54924506)
+light_color = Color(0.99999833, 0.99996, 0.99994075, 1)
+shadow_enabled = true
 
-[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1257949493]
-transform = Transform3D(0, -0.924365, -0.38150936, 0.15502556, 0.3768971, -0.9131898, 0.98791045, -0.0591437, 0.14330019, -0.38150936, -0.9131898, 0.14330019)
+[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1962288887]
+transform = Transform3D(0, -0.5747614, 0.81832105, 0.8981606, 0.3597891, 0.25270388, -0.4396674, 0.7349837, 0.5162281, 0.81832105, 0.25270388, 0.5162281)
 light_color = Color(0.572549, 0.776471, 0.956863, 1)
 light_energy = 0.0
 
-[node name="SkyDome" type="Node" parent="Sky3D" unique_id=1011329888]
-script = ExtResource("11_m335s")
-sun_azimuth = -2.8786573
-sun_altitude = -3.0165355
-moon_azimuth = -4.3530803
-moon_altitude = -2.7218401
-wind_direction = 0.3141592653589793
+[node name="SkyDome" type="Node" parent="Sky3D" unique_id=1885465575]
+script = ExtResource("17_faqco")
+sun_azimuth = -2.2577643
+sun_altitude = -1.047246
+moon_azimuth = -2.1335828
+moon_altitude = -1.3153225
+wind_direction = 2.35619451204804
 
-[node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=184294769]
-script = ExtResource("12_sq6bu")
+[node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=356398102]
+script = ExtResource("18_vshrl")
 editor_time_enabled = false
 dome_path = NodePath("../SkyDome")
-current_time = 23.9998
+current_time = 8.75
 
-[node name="Lights" type="Node3D" parent="." unique_id=450166390]
+[node name="FlyCamera" type="CharacterBody3D" parent="." unique_id=259703219]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2497.6367, 24.37539, 1669.6431)
+script = ExtResource("19_h6jp1")
+metadata/_custom_type_script = "uid://br6b4uik4d7ds"
 
-[node name="SpotLight3D" type="SpotLight3D" parent="Lights" unique_id=1144681553]
-transform = Transform3D(1, 0, 0, 0, -0.24726985, 0.96894664, 0, -0.96894664, -0.24726985, 2490, 19.82653, 1656.1296)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D2" type="SpotLight3D" parent="Lights" unique_id=1392116490]
-transform = Transform3D(0.22985302, 0.9430035, 0.2406493, 8.881785e-16, -0.24726984, 0.9689467, 0.97322536, -0.22271532, -0.056835722, 2505.7097, 19.745668, 1663.2069)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D3" type="SpotLight3D" parent="Lights" unique_id=816133814]
-transform = Transform3D(0.19225433, 0.92427444, -0.32978016, 0.12597889, 0.3100235, 0.9423454, 0.9732253, -0.2227153, -0.056835722, 2471.9324, 19.934492, 1673.593)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D4" type="SpotLight3D" parent="Lights" unique_id=744489213]
-transform = Transform3D(0.95970094, -0.27862534, -0.036633737, 0.1259789, 0.31002355, 0.9423454, -0.25120395, -0.90898466, 0.33263075, 2456.7114, 19.934492, 1661.1826)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D5" type="SpotLight3D" parent="Lights" unique_id=1537403009]
-transform = Transform3D(0.95970094, -0.27862534, -0.03663376, 0.1259789, 0.31002358, 0.9423454, -0.25120395, -0.9089848, 0.33263084, 2416.1028, 19.934492, 1661.1826)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D6" type="SpotLight3D" parent="Lights" unique_id=398035405]
-transform = Transform3D(0.95970094, -0.27862534, -0.03663376, 0.1259789, 0.31002358, 0.9423454, -0.25120395, -0.9089848, 0.33263084, 2395.9595, 19.934492, 1661.1826)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D8" type="SpotLight3D" parent="Lights" unique_id=669011409]
-transform = Transform3D(0.95970094, -0.27862534, -0.036633767, 0.1259789, 0.31002358, 0.9423454, -0.25120395, -0.9089848, 0.33263084, 2360.7737, 19.869703, 1661.7344)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D7" type="SpotLight3D" parent="Lights" unique_id=2111211661]
-transform = Transform3D(0.95970094, -0.27862537, -0.03663376, -0.15609308, -0.6369126, 0.7549685, -0.23368582, -0.71882564, -0.6547372, 2379.7947, 19.934492, 1656.4122)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 22.706
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D9" type="SpotLight3D" parent="Lights" unique_id=332308752]
-transform = Transform3D(0.95970094, -0.27862537, -0.03663375, -0.10748315, -0.4843721, 0.8682344, -0.25965646, -0.82930785, -0.4948, 2311.129, 20.56389, 1656.2905)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 28.608
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D10" type="SpotLight3D" parent="Lights" unique_id=401259839]
-transform = Transform3D(0.95970094, -0.27862537, -0.03663375, -0.10748315, -0.4843721, 0.8682344, -0.25965646, -0.82930785, -0.4948, 2289.021, 21.198997, 1655.9661)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 28.608
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D11" type="SpotLight3D" parent="Lights" unique_id=1639532096]
-transform = Transform3D(0.95970094, -0.27862537, -0.03663375, -0.10748315, -0.4843721, 0.8682344, -0.25965646, -0.82930785, -0.4948, 2267.5276, 21.198997, 1655.9661)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 28.608
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[node name="SpotLight3D12" type="SpotLight3D" parent="Lights" unique_id=1057848845]
-transform = Transform3D(0.95970094, -0.27862537, -0.03663375, -0.10748315, -0.4843721, 0.8682344, -0.25965646, -0.82930785, -0.4948, 2245.8132, 22.126373, 1653.511)
-light_color = Color(1, 0.69803923, 0.4745098, 1)
-spot_range = 28.608
-spot_attenuation = 0.25
-spot_angle = 68.8
-
-[connection signal="pressed" from="ExportNavigation/ExportButton" to="ExportNavigation" method="_on_export_button_pressed"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlyCamera" unique_id=1987895785]
+shape = SubResource("SphereShape3D_5m22n")
 
 [editable path="Car/body"]

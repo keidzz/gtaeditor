@@ -1,0 +1,650 @@
+[gd_scene format=3 uid="uid://dj6cg5ddxrcrj"]
+
+[ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="1_6v86h"]
+[ext_resource type="Script" uid="uid://dg25avte7aket" path="res://addons/road-generator/connectors/terrain3d_road_connector.gd" id="1_k4o7q"]
+[ext_resource type="PackedScene" uid="uid://biban76uh20e1" path="res://assets/models/vegetation/glTF/CommonTree_1.gltf" id="1_kptys"]
+[ext_resource type="PackedScene" uid="uid://cblfs0rvwdbh1" path="res://assets/models/vegetation/glTF/CommonTree_2.gltf" id="2_k4o7q"]
+[ext_resource type="Texture2D" uid="uid://cfqk60lpl5ljv" path="res://addons/sky_3d/assets/resources/SNoise.tres" id="2_t1c57"]
+[ext_resource type="PackedScene" uid="uid://cr2ubfhxugaq" path="res://assets/models/vegetation/glTF/CommonTree_3.gltf" id="3_8pmjg"]
+[ext_resource type="Texture2D" uid="uid://cecwdqjol0ckd" path="res://addons/sky_3d/assets/textures/noiseClouds.png" id="3_hbapt"]
+[ext_resource type="PackedScene" uid="uid://biadbjd8uie3t" path="res://assets/models/vegetation/glTF/CommonTree_5.gltf" id="4_18rw4"]
+[ext_resource type="Texture2D" uid="uid://2r8ylu6rg5dp" path="res://addons/sky_3d/assets/thirdparty/textures/moon/MoonMap.png" id="4_ihicl"]
+[ext_resource type="Texture2D" uid="uid://djpfuyxkryegn" path="res://addons/sky_3d/assets/textures/noise.jpg" id="5_sk5dm"]
+[ext_resource type="PackedScene" uid="uid://d3sr0a7dxfkr8" path="res://addons/terrain_3d/extras/particle_example/Terrain3DParticles.tscn" id="5_skwal"]
+[ext_resource type="Texture2D" uid="uid://bm7dot7t7u1q4" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/StarField.jpg" id="6_f4ok6"]
+[ext_resource type="Texture2D" uid="uid://c1vwcdcdvb74a" path="res://addons/sky_3d/assets/thirdparty/textures/milkyway/Milkyway.jpg" id="7_1b7uu"]
+[ext_resource type="Script" uid="uid://deo0gxkmk2ahd" path="res://addons/sky_3d/src/Sky3D.gd" id="8_1qnku"]
+[ext_resource type="Script" uid="uid://b4tkplvh7fq40" path="res://addons/sky_3d/src/SkyDome.gd" id="9_vy6fn"]
+[ext_resource type="Script" uid="uid://cjmkcj8hwm7ts" path="res://addons/sky_3d/src/TimeOfDay.gd" id="10_gco12"]
+[ext_resource type="Texture2D" uid="uid://bcipr7loyc2r1" path="res://assets/textures/terrain/grass/ground037_alb_ht.png" id="11_gco12"]
+[ext_resource type="Texture2D" uid="uid://byiaurk0uy33r" path="res://assets/textures/terrain/grass/ground037_nrm_rgh.png" id="12_mc8v2"]
+[ext_resource type="Texture2D" uid="uid://bd2cra3x716ty" path="res://assets/textures/terrain/rock/rock023_alb_ht.png" id="13_chyyc"]
+[ext_resource type="Texture2D" uid="uid://c0qattreglgvf" path="res://assets/textures/terrain/rock/rock023_nrm_rgh.png" id="14_skwal"]
+[ext_resource type="Script" uid="uid://bd04num4b253u" path="res://scenes/car.gd" id="15_rhsmd"]
+[ext_resource type="Script" uid="uid://cykt6cqaqxnoq" path="res://scenes/wheel.gd" id="16_3i7wp"]
+[ext_resource type="Curve" uid="uid://cnr3llcr3drq5" path="res://assets/curves/car_tire_front.tres" id="17_cavwq"]
+[ext_resource type="PackedScene" uid="uid://dej78jryo27we" path="res://blender/cars/lowpolybmw/wheel.glb" id="18_r0n0i"]
+[ext_resource type="Curve" uid="uid://cpjm6o4qmlec4" path="res://assets/curves/car_tire_back.tres" id="19_kptys"]
+[ext_resource type="PackedScene" uid="uid://vsibpbjhkj1b" path="res://blender/cars/lowpolybmw/body.glb" id="20_k4o7q"]
+[ext_resource type="Script" uid="uid://dlu7nesstlsye" path="res://scenes/followcamera.gd" id="21_8pmjg"]
+[ext_resource type="Script" uid="uid://bxp3i4cnonh8y" path="res://addons/road-generator/nodes/road_manager.gd" id="23_rhsmd"]
+[ext_resource type="Script" uid="uid://cph7euje06kel" path="res://addons/road-generator/nodes/road_container.gd" id="24_3i7wp"]
+[ext_resource type="Script" uid="uid://difs1qg4mpcpw" path="res://addons/road-generator/nodes/road_point.gd" id="25_cavwq"]
+[ext_resource type="PackedScene" uid="uid://bcmhgm8d3ko4i" path="res://assets/models/obstacles/tube.tscn" id="31_8pmjg"]
+[ext_resource type="Texture2D" uid="uid://ylfpcppsas04" path="res://textures/Purple/texture_10.png" id="32_18rw4"]
+[ext_resource type="Texture2D" uid="uid://bxmfxpq07ogde" path="res://textures/Dark/texture_13.png" id="33_6kx0i"]
+[ext_resource type="PackedScene" uid="uid://di2epmc8gusea" path="res://assets/models/obstacles/wall.tscn" id="34_cu53s"]
+[ext_resource type="PackedScene" uid="uid://dvr17tp4dkvqh" path="res://assets/models/obstacles/loop.tscn" id="35_cu53s"]
+
+[sub_resource type="Gradient" id="Gradient_chyyc"]
+offsets = PackedFloat32Array(0.2, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_skwal"]
+noise_type = 2
+frequency = 0.03
+cellular_jitter = 3.0
+cellular_return_type = 0
+domain_warp_enabled = true
+domain_warp_type = 1
+domain_warp_amplitude = 50.0
+domain_warp_fractal_type = 2
+domain_warp_fractal_lacunarity = 1.5
+domain_warp_fractal_gain = 1.0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_j8sp2"]
+noise = SubResource("FastNoiseLite_skwal")
+color_ramp = SubResource("Gradient_chyyc")
+seamless = true
+
+[sub_resource type="Terrain3DMaterial" id="Terrain3DMaterial_u5mh0"]
+_shader_parameters = {
+&"auto_base_texture": 2,
+&"auto_height_reduction": 0.1,
+&"auto_overlay_texture": 1,
+&"auto_slope": 0.800000038,
+&"bias_distance": 512.0,
+&"blend_sharpness": 0.5,
+&"depth_blur": 0.0,
+&"dual_scale_far": null,
+&"dual_scale_near": null,
+&"dual_scale_reduction": null,
+&"dual_scale_texture": null,
+&"enable_macro_variation": true,
+&"enable_projection": true,
+&"flat_terrain_normals": false,
+&"macro_variation1": Color(0.93398845, 0.9376666, 0.95580417, 1),
+&"macro_variation2": Color(0.9262702, 0.9143535, 0.85724837, 1),
+&"macro_variation_slope": 0.333,
+&"mipmap_bias": 1.0,
+&"noise1_angle": 0.0,
+&"noise1_offset": Vector2(0.5, 0.5),
+&"noise1_scale": 0.04,
+&"noise2_scale": 0.076,
+&"noise_texture": SubResource("NoiseTexture2D_j8sp2"),
+&"projection_threshold": 0.8,
+&"tri_scale_reduction": null
+}
+world_background = 0
+auto_shader = true
+dual_scaling = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_chyyc"]
+transparency = 4
+cull_mode = 2
+vertex_color_use_as_albedo = true
+backlight_enabled = true
+backlight = Color(0.5, 0.5, 0.5, 1)
+distance_fade_mode = 1
+distance_fade_min_distance = 128.0
+distance_fade_max_distance = 96.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_skwal"]
+generated_type = 1
+height_offset = 0.5
+material_override = SubResource("StandardMaterial3D_chyyc")
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_18rw4"]
+name = "CommonTree_1"
+id = 1
+scene_file = ExtResource("1_kptys")
+density = 0.06974417
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_6u0p0"]
+name = "CommonTree_2"
+id = 2
+scene_file = ExtResource("2_k4o7q")
+density = 0.06854253
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_6kx0i"]
+name = "CommonTree_3"
+id = 3
+scene_file = ExtResource("3_8pmjg")
+density = 0.061574847
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DMeshAsset" id="Terrain3DMeshAsset_cu53s"]
+name = "CommonTree_4"
+id = 4
+scene_file = ExtResource("4_18rw4")
+density = 0.09213711
+last_lod = 0
+last_shadow_lod = 0
+lod0_range = 128.0
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_kptys"]
+name = "ground037_alb_ht"
+albedo_texture = ExtResource("11_gco12")
+normal_texture = ExtResource("12_mc8v2")
+normal_depth = 1.0
+ao_strength = 2.0
+uv_scale = 0.08
+detiling_rotation = 0.08
+detiling_shift = 0.08
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_cavwq"]
+name = "forrest_ground_01_diff_1k"
+id = 1
+albedo_color = Color(0.8073496, 0.9513436, 0.7369668, 1)
+albedo_texture = ExtResource("11_gco12")
+normal_texture = ExtResource("12_mc8v2")
+normal_depth = 1.0
+ao_strength = 2.0
+uv_scale = 0.08
+detiling_rotation = 0.08
+detiling_shift = 0.08
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_r0n0i"]
+name = "rocks_ground_06_diff_1k"
+id = 2
+albedo_color = Color(0.78775924, 0.78775924, 0.78775924, 1)
+albedo_texture = ExtResource("13_chyyc")
+normal_texture = ExtResource("14_skwal")
+normal_depth = 1.0
+ao_strength = 2.0
+detiling_rotation = 0.08
+detiling_shift = 0.08
+
+[sub_resource type="Terrain3DAssets" id="Terrain3DAssets_kptys"]
+mesh_list = Array[Terrain3DMeshAsset]([SubResource("Terrain3DMeshAsset_skwal"), SubResource("Terrain3DMeshAsset_18rw4"), SubResource("Terrain3DMeshAsset_6u0p0"), SubResource("Terrain3DMeshAsset_6kx0i"), SubResource("Terrain3DMeshAsset_cu53s")])
+texture_list = Array[Terrain3DTextureAsset]([SubResource("Terrain3DTextureAsset_kptys"), SubResource("Terrain3DTextureAsset_cavwq"), SubResource("Terrain3DTextureAsset_r0n0i")])
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_chyyc"]
+friction = 0.0
+
+[sub_resource type="Curve" id="Curve_skwal"]
+_data = [Vector2(0, 0.25925928), 0.0, 0.0, 0, 0, Vector2(0.29506314, 0.9126984), 0.0, 0.0, 0, 0, Vector2(0.5970149, 0.7910053), 0.0, 0.0, 0, 0, Vector2(1, 0.10582012), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_j8sp2"]
+points = PackedVector3Array(1.0095394, 0.3704304, 0.3834648, 1.0059819, 0.3704304, 0.48728824, 0.93265784, -0.5462717, 1.1382885, 0.93384373, -0.5337695, 1.014823, 0.93107677, -0.52796036, -0.20299649, 0.9237641, -0.5277078, -0.8380959, 0.9132892, -0.47580472, -1.7266738, 0.93858707, -0.100738555, -1.5873075, 0.9381918, -0.026104212, -1.5456846, 0.9374012, 0.0136755705, -1.4540207, 0.79411304, 0.21030116, -1.8538809, 0.6717745, 0.50732327, -1.2384237, 0.62019074, 0.578169, -1.1383418, 0.59943867, 0.62173736, -0.95828784, 0.5883709, 0.65368736, -0.7412877, 0.5352061, 0.6975082, -0.73707867, 0.55220306, 0.6895523, -0.4307531, 0.5257194, 0.70786357, -0.43028545, 0.5686071, 0.62944067, 0.22726226, 0.7383789, 0.16269171, 1.6531959, 0.78660274, 0.12935251, 1.6854653, 0.84431326, 0.051813602, 1.8491507, 0.93404126, 0.047646165, 1.6419721, 0.93404126, 3.6776066e-05, 1.7574868, 0.9350295, -0.034186423, 1.7228794, 0.92396176, -0.13268864, 1.8874998, 0.91684675, -0.27602202, 1.9090128, 0.53046274, 0.6940986, -0.08981967, 0.89846635, -0.53238034, 1.9174309, 0.7903578, -0.5359163, 2.120401, -0.9328555, -0.5462717, 1.1382885, 0.9041978, -0.5347797, -0.6196928, 0.9259381, -0.5292232, -0.6196928, 0.9020238, -0.5312438, -0.96015847, 0.9069648, -0.42781645, -1.7870036, 0.91309166, -0.3352496, -1.7594109, 0.9178349, -0.2693289, -1.7346243, 0.9308791, -0.16779584, -1.6471696, -0.9134869, -0.47580472, -1.7266738, 0.2598951, -0.41872394, -2.3575642, 0.49172556, -0.41872394, -2.3524199, 0.5152446, -0.41872394, -2.3500814, 0.8512306, -0.4508003, -1.9675252, 0.8678323, -0.39763436, -1.9637839, 0.9265311, -0.16261816, -1.6775682, 0.9350295, -0.08217469, -1.6074173, 0.8209919, -0.090004355, -2.126534, 0.81881785, 0.07467115, -1.9941826, 0.7986587, 0.1661014, -1.9184196, 0.7425293, 0.22343475, -2.016163, 0.74035525, 0.22697073, -2.0170984, 0.6976652, 0.2817784, -2.018034, 0.5802678, 0.5628886, -1.3081069, 0.56386375, 0.6155493, -1.1416154, 0.5415305, 0.6733879, -0.9395809, 0.5695952, 0.6491412, -0.9442576, 0.32946396, 0.7260487, -0.74082005, 0.32551122, 0.7305949, -0.42467332, 0.3170128, 0.6384069, 0.2726264, 0.37709498, 0.17367852, 1.9380088, 0.70319915, 0.10775781, 1.8996596, 0.32116318, 0.70647454, -0.06643605, 0.843325, -0.0040043592, 1.912754, 0.7605144, 0.05534959, 1.973084, 0.83304787, -0.16855356, 2.093276, 0.9190208, -0.20075619, 1.9272523, 0.8539976, -0.20568132, 2.0680218, 0.91388214, -0.27576944, 1.951571, 0.893723, -0.52732897, 1.9562478, 0.8593339, -0.5318752, 2.0263987, -0.7905555, -0.5359163, 2.120401, 0.87257564, -0.4566094, 2.0324783, 0.6707864, -0.42251247, 2.224224, 0.57433856, -0.50623935, 2.2780066, 0.33559084, -0.5133113, 2.3518987, 0, -0.51545817, 2.3808947, -0.89866394, -0.53238034, 1.9174309, -0.9170444, -0.27602202, 1.9090128, -1.0061795, 0.3704304, 0.48728824, -1.0095394, 0.3704304, 0.3834648, -0.9340413, -0.5337695, 1.014823, -0.93127435, -0.52796036, -0.20299649, -0.9261358, -0.5292232, -0.6196928, -0.92396176, -0.5277078, -0.8380959, -0.90439546, -0.5347797, -0.6196928, 0.9024191, -0.53326434, -0.76888037, -0.90222144, -0.5312438, -0.96015847, -0.93878466, -0.100738555, -1.5873075, -0.93107677, -0.16779584, -1.6471696, -0.9180326, -0.2693289, -1.7346243, -0.91328925, -0.3352496, -1.7594109, -0.9071624, -0.42781645, -1.7870036, -0.86802995, -0.39763436, -1.9637839, -0.8514283, -0.4508003, -1.9675252, -0.5154422, -0.41872394, -2.3500814, -0.49192315, -0.41872394, -2.3524199, -0.26009274, -0.41872394, -2.3575642, 0.26029038, -0.3146652, -2.3800125, 0.26048803, -0.2660455, -2.3903012, 0.493109, -0.31491774, -2.373465, 0.49389958, -0.26655063, -2.3828185, 0.5160351, -0.31504405, -2.3701913, 0.6433145, -0.25493243, -2.2986374, 0.78502166, -0.42390162, -2.1494498, 0.82454944, -0.43703526, -2.0676072, 0.841151, -0.38753158, -2.0648012, 0.79213655, -0.38260645, -2.146176, 0.8018209, -0.03292358, -2.1527236, 0.8288975, -0.38753158, -2.091926, 0.80004215, 0.059390664, -2.0657365, 0.7409482, 0.20575488, -2.0460942, 0.73877406, 0.20865941, -2.047965, 0.6215743, 0.30956107, -2.1213894, 0.47492623, 0.3578019, -2.2060382, 0.3263018, 0.69965506, -0.9456606, 0.32768524, 0.6376492, -1.209428, 0, 0.73918223, -0.7356756, 0, 0.74385476, -0.41531992, 0, 0.7127887, -0.9433223, 0, 0.71973443, -0.051470518, 0, 0.6515405, 0.29226875, 0.18281591, 0.17342597, 1.9468942, 0.34863496, 0.11773431, 2.0984201, 0.5565511, 0.014938414, 2.1550088, 0.7986587, -0.14645371, 2.1199331, 0.67236745, -0.38273275, 2.223289, -0.8332455, -0.16855356, 2.093276, -0.85419524, -0.20568132, 2.0680218, -0.8727733, -0.4566094, 2.0324783, -0.85953146, -0.5318752, 2.0263987, -0.33578843, -0.5133113, 2.3518987, -0.5745362, -0.50623935, 2.2780066, -0.67098397, -0.42251247, 2.224224, 0.36365557, -0.16590157, 2.3439484, 0.36859655, -0.29483846, 2.3439484, 0.23795724, -0.46027166, 2.3607845, 0.075695634, -0.45736712, 2.3743472, 0.022333145, -0.061211407, 2.3654613, -0.022530854, -0.061211407, 2.3654613, -0.07589334, -0.45736712, 2.3743472, -0.23815483, -0.46027166, 2.3607845, -0.8939206, -0.52732897, 1.9562478, -0.9140798, -0.27576944, 1.951571, -0.9192184, -0.20075619, 1.9272523, -0.92415935, -0.13268864, 1.8874998, -0.93522716, -0.034186423, 1.7228794, -0.934239, 3.6776066e-05, 1.7574868, -0.934239, 0.047646165, 1.6419721, -0.8445109, 0.051813602, 1.8491507, -0.7868004, 0.12935251, 1.6854653, -0.7385765, 0.16269171, 1.6531959, -0.5688047, 0.62944067, 0.22726226, -0.5306604, 0.6940986, -0.08981967, -0.52591705, 0.70786357, -0.43028545, -0.55240065, 0.6895523, -0.4307531, -0.5354037, 0.6975082, -0.73707867, -0.58856857, 0.65368736, -0.7412877, -0.5996363, 0.62173736, -0.95828784, -0.6203884, 0.578169, -1.1383418, -0.67197216, 0.50732327, -1.2384237, -0.7943106, 0.21030116, -1.8538809, -0.9375988, 0.0136755705, -1.4540207, -0.93838936, -0.026104212, -1.5456846, -0.90261674, -0.53326434, -0.76888037, -0.93522716, -0.08217469, -1.6074173, -0.92672867, -0.16261816, -1.6775682, -0.8211895, -0.090004355, -2.126534, -0.84134865, -0.38753158, -2.0648012, -0.824747, -0.43703526, -2.0676072, -0.6435121, -0.25493243, -2.2986374, -0.5162327, -0.31504405, -2.3701913, -0.49409717, -0.26655063, -2.3828185, -0.49330664, -0.31491774, -2.373465, -0.78521925, -0.42390162, -2.1494498, -0.26068568, -0.2660455, -2.3903012, -0.26048803, -0.3146652, -2.3800125, 0, -0.23573712, -2.3968487, 0.5164304, -0.26667693, -2.3795447, 0.24013126, 0.3124656, -2.2953637, 0.24625802, 0.3704304, -2.282269, 0.65438235, -0.1842129, -2.2972345, 0.77000105, -0.020926535, -2.1803162, 0.73205435, 0.14627469, -2.1129713, 0.61268055, 0.24881804, -2.1761072, 0.589952, 0.31764328, -2.1429024, 0.59845054, 0.20234519, -2.2036998, 0.47255456, 0.29592228, -2.2294219, 0, 0.6509092, -1.2300055, -0.32966167, 0.7260487, -0.74082005, -0.32570887, 0.7305949, -0.42467332, -0.3264994, 0.69965506, -0.9456606, -0.32136083, 0.70647454, -0.06643605, -0.31721038, 0.6384069, 0.2726264, -0.37729263, 0.17367852, 1.9380088, -0.18301362, 0.17342597, 1.9468942, -0.3488326, 0.11773431, 2.0984201, 0.13676608, 0.08123797, 2.1896167, 0.12609363, 0.05913812, 2.2401252, 0.29507482, -0.0018575191, 2.3135495, 0.32017493, 0.047141075, 2.224224, 0.36227202, 0.04158449, 2.214871, 0.7611073, -0.14253888, 2.1423817, 0.3195821, -0.03128189, 2.332724, 0.6450933, -0.14935824, 2.2013083, -0.6725651, -0.38273275, 2.223289, -0.7988563, -0.14645371, 2.1199331, -0.760712, 0.05534959, 1.973084, -0.8435227, -0.0040043592, 1.912754, -0.36385316, -0.16590157, 2.3439484, -0.36879414, -0.29483846, 2.3439484, 0.060872793, -0.0018575191, 2.3331919, -0.061070383, -0.0018575191, 2.3331919, -0.3197797, -0.03128189, 2.332724, -0.70339674, 0.10775781, 1.8996596, -0.54172814, 0.6733879, -0.9395809, -0.56979287, 0.6491412, -0.9442576, -0.56406134, 0.6155493, -1.1416154, -0.5804654, 0.5628886, -1.3081069, -0.69786286, 0.2817784, -2.018034, -0.7988563, 0.1661014, -1.9184196, -0.8190155, 0.07467115, -1.9941826, -0.7405529, 0.22697073, -2.0170984, -0.7427269, 0.22343475, -2.016163, -0.8020185, -0.03292358, -2.1527236, -0.79233426, -0.38260645, -2.146176, -0.82909507, -0.38753158, -2.091926, -0.65457994, -0.1842129, -2.2972345, -0.516628, -0.26667693, -2.3795447, -0.24645567, 0.3704304, -2.282269, -0.24032885, 0.3124656, -2.2953637, 0, 0.3124656, -2.300508, 0.5411352, -0.24129367, -2.3645792, 0, 0.36323214, -2.2888162, 0.6000316, -0.16034505, -2.3196826, -0.3278829, 0.6376492, -1.209428, -0.55674875, 0.014938414, 2.1550088, -0.36246967, 0.04158449, 2.214871, -0.32037264, 0.047141075, 2.224224, -0.29527247, -0.0018575191, 2.3135495, -0.12629122, 0.05913812, 2.2401252, -0.13696373, 0.08123797, 2.1896167, 0.107120275, -0.0018575191, 2.3294506, -0.6452909, -0.14935824, 2.2013083, -0.761305, -0.14253888, 2.1423817, -0.107317924, -0.0018575191, 2.3294506, -0.47512382, 0.3578019, -2.2060382, -0.62177193, 0.30956107, -2.1213894, -0.7389717, 0.20865941, -2.047965, -0.7411458, 0.20575488, -2.0460942, -0.8002398, 0.059390664, -2.0657365, -0.732252, 0.14627469, -2.1129713, -0.7701987, -0.020926535, -2.1803162, -0.5986482, 0.20234519, -2.2036998, -0.60022926, -0.16034505, -2.3196826, -0.54133284, -0.24129367, -2.3645792, -0.4727522, 0.29592228, -2.2294219, -0.61287814, 0.24881804, -2.1761072, -0.59014964, 0.31764328, -2.1429024)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_u5mh0"]
+height = 0.2
+radius = 0.36
+
+[sub_resource type="Gradient" id="Gradient_rhsmd"]
+colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 0.39215687)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_bcnil"]
+gradient = SubResource("Gradient_rhsmd")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_3i7wp"]
+gravity = Vector3(0, 0, 0)
+color_ramp = SubResource("GradientTexture1D_bcnil")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85vx5"]
+transparency = 1
+vertex_color_use_as_albedo = true
+
+[sub_resource type="QuadMesh" id="QuadMesh_cavwq"]
+material = SubResource("StandardMaterial3D_85vx5")
+size = Vector2(0.6, 1)
+orientation = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_j8sp2"]
+shader = ExtResource("1_6v86h")
+shader_parameter/sky_visible = true
+shader_parameter/color_correction = Vector2(0, 1)
+shader_parameter/ground_color = Color(0.3, 0.3, 0.3, 1)
+shader_parameter/horizon_offset = 0.0
+shader_parameter/atm_darkness = 0.5
+shader_parameter/atm_sun_intensity = 18.0
+shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
+shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
+shader_parameter/atm_night_tint = Color(0, 0, 0, 0)
+shader_parameter/atm_level_params = Vector3(1, 0, 0)
+shader_parameter/atm_thickness = 0.7
+shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
+shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
+shader_parameter/sun_light_color = Color(1, 1, 1, 1)
+shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
+shader_parameter/sun_disk_intensity = 30.0
+shader_parameter/sun_disk_size = 0.02
+shader_parameter/atm_sun_mie_tint = Color(1, 1, 1, 1)
+shader_parameter/atm_sun_mie_intensity = 1.0
+shader_parameter/atm_sun_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
+shader_parameter/moon_color = Color(1, 1, 1, 1)
+shader_parameter/moon_texture = ExtResource("4_ihicl")
+shader_parameter/moon_texture_alignment = Vector3(7, 1.4, 4.8)
+shader_parameter/moon_texture_flip_u = false
+shader_parameter/moon_texture_flip_v = false
+shader_parameter/moon_size = 0.07
+shader_parameter/atm_moon_mie_tint = Color(0.137255, 0.184314, 0.292196, 1)
+shader_parameter/atm_moon_mie_intensity = 0.0
+shader_parameter/atm_moon_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
+shader_parameter/starmap_color = Color(0.709804, 0.709804, 0.709804, 0.854902)
+shader_parameter/starmap_texture = ExtResource("7_1b7uu")
+shader_parameter/starmap_flip_u = false
+shader_parameter/starmap_flip_v = false
+shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
+shader_parameter/star_rotation_offset = 9.38899
+shader_parameter/star_rotation = -11.246857883220983
+shader_parameter/star_tilt = -1.2915436464758039
+shader_parameter/star_field_color = Color(1, 1, 1, 1)
+shader_parameter/star_field_texture = ExtResource("6_f4ok6")
+shader_parameter/star_scintillation = 0.75
+shader_parameter/star_scintillation_speed = 0.01
+shader_parameter/noise_tex = ExtResource("5_sk5dm")
+shader_parameter/clouds_night_color = Color(0.090196, 0.094118, 0.129412, 1)
+shader_parameter/cirrus_visible = true
+shader_parameter/cirrus_intensity = 2.0
+shader_parameter/cirrus_coverage = 0.5
+shader_parameter/cirrus_thickness = 1.7
+shader_parameter/cirrus_absorption = 2.0
+shader_parameter/cirrus_sky_tint_fade = 0.5
+shader_parameter/cirrus_size = 1.0
+shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
+shader_parameter/cirrus_position1 = Vector2(0.87283087, 0.3151918)
+shader_parameter/cirrus_position2 = Vector2(0.87283087, 0.3151918)
+shader_parameter/cirrus_texture = ExtResource("2_t1c57")
+shader_parameter/cumulus_visible = true
+shader_parameter/cumulus_intensity = 0.6
+shader_parameter/cumulus_coverage = 0.55
+shader_parameter/cumulus_thickness = 0.0243
+shader_parameter/cumulus_absorption = 2.0
+shader_parameter/cumulus_noise_freq = 2.7
+shader_parameter/cumulus_sky_tint_fade = 0.0
+shader_parameter/cumulus_size = 0.5
+shader_parameter/cumulus_position = Vector2(4.3605905, -13.410451)
+shader_parameter/cumulus_texture = ExtResource("3_hbapt")
+shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
+shader_parameter/cumulus_mie_intensity = 1.0
+shader_parameter/show_azimuthal_grid = false
+shader_parameter/azimuthal_grid_color = Color(0.87058824, 0.72156864, 0.5294118, 1)
+shader_parameter/azimuthal_grid_rotation_offset = 0.03
+shader_parameter/show_equatorial_grid = false
+shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
+shader_parameter/equatorial_grid_rotation_offset = 0.03
+shader_parameter/moon_matrix = Basis(0.95184594, -0.29470056, -0.08450403, 0.1286053, 0.634033, -0.7625371, 0.27829847, 0.7149502, 0.64140177)
+
+[sub_resource type="Sky" id="Sky_mw3q6"]
+sky_material = SubResource("ShaderMaterial_j8sp2")
+
+[sub_resource type="Environment" id="Environment_u5mh0"]
+background_mode = 2
+sky = SubResource("Sky_mw3q6")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+reflected_light_source = 2
+tonemap_mode = 3
+sdfgi_use_occlusion = true
+glow_enabled = true
+glow_bloom = 0.5
+volumetric_fog_density = 0.0052
+adjustment_enabled = true
+adjustment_brightness = 1.06
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_rhsmd"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6u0p0"]
+albedo_texture = ExtResource("32_18rw4")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_1np08"]
+size = Vector3(4.51, 7.495, 0.175)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_uxkab"]
+albedo_texture = ExtResource("33_6kx0i")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_cu53s"]
+size = Vector3(8.34, 9.105, 0.175)
+
+[node name="Landscape" type="Node3D" unique_id=1820032345]
+
+[node name="RoadTerrain3DConnector" type="Node" parent="." unique_id=1713288408 node_paths=PackedStringArray("terrain", "road_manager")]
+script = ExtResource("1_k4o7q")
+terrain = NodePath("../Terrain3D")
+road_manager = NodePath("../RoadManager")
+metadata/_custom_type_script = "uid://dg25avte7aket"
+
+[node name="Terrain3D" type="Terrain3D" parent="." unique_id=1585493000]
+data_directory = "res://assets/terraindata"
+material = SubResource("Terrain3DMaterial_u5mh0")
+assets = SubResource("Terrain3DAssets_kptys")
+top_level = true
+metadata/_edit_lock_ = true
+
+[node name="Terrain3DParticles" parent="Terrain3D" unique_id=572468564 node_paths=PackedStringArray("terrain") instance=ExtResource("5_skwal")]
+terrain = NodePath("..")
+
+[node name="Car" type="RigidBody3D" parent="." unique_id=726292847 node_paths=PackedStringArray("wheels", "skid_marks")]
+transform = Transform3D(0.9951364, 0, 0.098507375, 0, 1, 0, -0.098507375, 0, 0.9951364, 269.81964, 14.676859, -33.752552)
+mass = 50.0
+physics_material_override = SubResource("PhysicsMaterial_chyyc")
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.5, 0)
+linear_damp_mode = 1
+script = ExtResource("15_rhsmd")
+wheels = [NodePath("WheelFL"), NodePath("WheelRL"), NodePath("WheelFR"), NodePath("WheelRR")]
+max_speed = 100.0
+accel_curve = SubResource("Curve_skwal")
+tire_max_turn_degrees = 12
+skid_marks = [NodePath("Skidmarks/GPUParticles3D"), NodePath("Skidmarks/GPUParticles3D2"), NodePath("Skidmarks/GPUParticles3D3"), NodePath("Skidmarks/GPUParticles3D4")]
+
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Car" unique_id=1108288429]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0.041270256, 0)
+shape = SubResource("ConvexPolygonShape3D_j8sp2")
+
+[node name="WheelFL" type="RayCast3D" parent="Car" unique_id=2012344762 node_paths=PackedStringArray("shapecast")]
+process_physics_priority = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.855, -0.4694767, -1.53)
+script = ExtResource("16_3i7wp")
+shapecast = NodePath("ShapeCast3D")
+spring_strength = 5000.0
+spring_damping = 120.0
+rest_dist = 0.15
+over_extend = 0.08
+wheel_radius = 0.34
+z_brake_traction = 0.5
+is_steer = true
+grip_curve = ExtResource("17_cavwq")
+
+[node name="wheel" parent="Car/WheelFL" unique_id=549318589 instance=ExtResource("18_r0n0i")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFL" unique_id=1896488838]
+process_physics_priority = -1
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CylinderShape3D_u5mh0")
+target_position = Vector3(0, 0, 0)
+max_results = 3
+debug_shape_custom_color = Color(1, 0, 0, 1)
+
+[node name="WheelRL" type="RayCast3D" parent="Car" unique_id=1817587112 node_paths=PackedStringArray("shapecast")]
+process_physics_priority = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.855, -0.4694767, 1.3409159)
+script = ExtResource("16_3i7wp")
+shapecast = NodePath("ShapeCast3D")
+spring_strength = 5000.0
+spring_damping = 120.0
+rest_dist = 0.15
+over_extend = 0.08
+wheel_radius = 0.34
+z_brake_traction = 0.5
+is_motor = true
+grip_curve = ExtResource("19_kptys")
+
+[node name="wheel" parent="Car/WheelRL" unique_id=769674900 instance=ExtResource("18_r0n0i")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRL" unique_id=1982565175]
+process_physics_priority = -1
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CylinderShape3D_u5mh0")
+target_position = Vector3(0, 0, 0)
+max_results = 3
+debug_shape_custom_color = Color(1, 0, 0, 1)
+
+[node name="WheelFR" type="RayCast3D" parent="Car" unique_id=1202809853 node_paths=PackedStringArray("shapecast")]
+process_physics_priority = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8545952, -0.4694767, -1.5299997)
+script = ExtResource("16_3i7wp")
+shapecast = NodePath("ShapeCast3D")
+spring_strength = 5000.0
+spring_damping = 120.0
+rest_dist = 0.15
+over_extend = 0.08
+wheel_radius = 0.34
+z_brake_traction = 0.5
+is_steer = true
+grip_curve = ExtResource("17_cavwq")
+
+[node name="wheel" parent="Car/WheelFR" unique_id=254200040 instance=ExtResource("18_r0n0i")]
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelFR" unique_id=1851223486]
+process_physics_priority = -1
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CylinderShape3D_u5mh0")
+target_position = Vector3(0, 0, 0)
+max_results = 3
+debug_shape_custom_color = Color(1, 0, 0, 1)
+
+[node name="WheelRR" type="RayCast3D" parent="Car" unique_id=1962288250 node_paths=PackedStringArray("shapecast")]
+process_physics_priority = -1
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8545952, -0.4694767, 1.3499999)
+script = ExtResource("16_3i7wp")
+shapecast = NodePath("ShapeCast3D")
+spring_strength = 5000.0
+spring_damping = 120.0
+rest_dist = 0.15
+over_extend = 0.08
+wheel_radius = 0.34
+z_brake_traction = 0.5
+is_motor = true
+grip_curve = ExtResource("19_kptys")
+
+[node name="wheel" parent="Car/WheelRR" unique_id=597080263 instance=ExtResource("18_r0n0i")]
+
+[node name="ShapeCast3D" type="ShapeCast3D" parent="Car/WheelRR" unique_id=64483384]
+process_physics_priority = -1
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("CylinderShape3D_u5mh0")
+target_position = Vector3(0, 0, 0)
+max_results = 3
+debug_shape_custom_color = Color(1, 0, 0, 1)
+
+[node name="Skidmarks" type="Node3D" parent="Car" unique_id=2001520463]
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=649625408]
+emitting = false
+amount = 150
+lifetime = 1.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_3i7wp")
+draw_pass_1 = SubResource("QuadMesh_cavwq")
+
+[node name="GPUParticles3D2" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=961441384]
+emitting = false
+amount = 150
+lifetime = 1.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_3i7wp")
+draw_pass_1 = SubResource("QuadMesh_cavwq")
+
+[node name="GPUParticles3D3" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=600611528]
+emitting = false
+amount = 150
+lifetime = 1.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_3i7wp")
+draw_pass_1 = SubResource("QuadMesh_cavwq")
+
+[node name="GPUParticles3D4" type="GPUParticles3D" parent="Car/Skidmarks" unique_id=244575566]
+emitting = false
+amount = 150
+lifetime = 1.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_3i7wp")
+draw_pass_1 = SubResource("QuadMesh_cavwq")
+
+[node name="body" parent="Car" unique_id=797996442 instance=ExtResource("20_k4o7q")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+
+[node name="CameraPivot" type="Node3D" parent="Car" unique_id=1930650282]
+
+[node name="Camera3D" type="Camera3D" parent="Car/CameraPivot" unique_id=225851548]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.646, 5.055)
+top_level = true
+current = true
+script = ExtResource("21_8pmjg")
+min_distance = 2.5
+max_distance = 5.0
+height = 1.5
+
+[node name="Sky3D" type="WorldEnvironment" parent="." unique_id=620372822]
+environment = SubResource("Environment_u5mh0")
+camera_attributes = SubResource("CameraAttributesPractical_rhsmd")
+script = ExtResource("8_1qnku")
+editor_time_enabled = false
+game_time_enabled = false
+current_time = 12.0
+wind_direction = 0.3141592653589793
+
+[node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=291799600]
+transform = Transform3D(0.9985913, 0.04123192, -0.03339601, 0, 0.62940073, 0.7770809, 0.05306001, -0.7759862, 0.6285141, -0.03339601, 0.7770809, 0.6285141)
+shadow_enabled = true
+
+[node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1379986896]
+transform = Transform3D(0, -0.96049464, 0.27829847, 0.6677828, 0.2071532, 0.71495014, -0.7443562, 0.18584293, 0.64140177, 0.27829847, 0.71495014, 0.64140177)
+light_color = Color(0.572549, 0.776471, 0.956863, 1)
+light_energy = 0.0
+
+[node name="SkyDome" type="Node" parent="Sky3D" unique_id=394690533]
+script = ExtResource("9_vy6fn")
+sun_azimuth = -3.1946776
+sun_altitude = -0.6807818
+moon_azimuth = -2.7322154
+moon_altitude = -0.77424353
+wind_direction = 0.3141592653589793
+
+[node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=955788030]
+script = ExtResource("10_gco12")
+editor_time_enabled = false
+game_time_enabled = false
+dome_path = NodePath("../SkyDome")
+current_time = 12.0
+
+[node name="RoadManager" type="Node3D" parent="." unique_id=1956292619]
+script = ExtResource("23_rhsmd")
+metadata/_custom_type_script = "uid://bxp3i4cnonh8y"
+
+[node name="Road_001" type="Node3D" parent="RoadManager" unique_id=1190493137]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.277527, 0, -138.32144)
+script = ExtResource("24_3i7wp")
+use_lowpoly_preview = true
+
+[node name="RP_001" type="Node3D" parent="RoadManager/Road_001" unique_id=9437453]
+transform = Transform3D(-0.17880227, 0, 0.98388505, 0, 1, 0, -0.98388505, 0, -0.17880227, -5.217497, 0.25, 0.94818014)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 131.84554
+next_mag = 98.3562
+prior_pt_init = NodePath("../RP_002")
+next_pt_init = NodePath("../RP_007")
+
+[node name="RP_002" type="Node3D" parent="RoadManager/Road_001" unique_id=1282956326]
+transform = Transform3D(-0.02094239, 0, -0.9997806, 0, 1, 0, 0.9997806, 0, -0.02094239, 38.31057, 0.25001526, 191.43471)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 45.387886
+next_mag = 107.857796
+prior_pt_init = NodePath("../RP_003")
+next_pt_init = NodePath("../RP_001")
+
+[node name="RP_003" type="Node3D" parent="RoadManager/Road_001" unique_id=671745259]
+transform = Transform3D(0.4352311, 0, -0.9003188, 0, 1, 0, 0.9003188, 0, 0.4352311, 226.43556, 0.24998474, 194.31732)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 110.210205
+next_mag = 23.32222
+prior_pt_init = NodePath("../RP_004")
+next_pt_init = NodePath("../RP_002")
+
+[node name="RP_004" type="Node3D" parent="RoadManager/Road_001" unique_id=503485733]
+transform = Transform3D(0.49090374, 0, 0.87121373, 0, 1, 0, -0.87121373, 0, 0.49090374, 245.16208, 0.25, -19.016739)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 21.08976
+next_mag = 126.38036
+prior_pt_init = NodePath("../RP_005")
+next_pt_init = NodePath("../RP_003")
+
+[node name="RP_005" type="Node3D" parent="RoadManager/Road_001" unique_id=214783939]
+transform = Transform3D(-0.16332601, 0, 0.98657215, 0, 1, 0, -0.98657215, 0, -0.16332601, 115.189, 24.26, -8.392)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 33.70292
+next_mag = 67.30977
+prior_pt_init = NodePath("../RP_006")
+next_pt_init = NodePath("../RP_004")
+
+[node name="RP_006" type="Node3D" parent="RoadManager/Road_001" unique_id=277522578]
+transform = Transform3D(0.9845032, -0.009177986, 0.17512637, 0, 0.9986295, 0.05233596, -0.17536671, -0.05152492, 0.98315394, 65.67566, 21.893444, -51.648914)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 42.945557
+next_mag = 60.31936
+prior_pt_init = NodePath("../RP_007")
+next_pt_init = NodePath("../RP_005")
+
+[node name="RP_007" type="Node3D" parent="RoadManager/Road_001" unique_id=1479947661]
+transform = Transform3D(-0.64648694, 0, 0.7629251, 0, 1, 0, -0.7629251, 0, -0.64648694, -2.7336698, 0.25, -141.07251)
+script = ExtResource("25_cavwq")
+traffic_dir = Array[int]([2, 1])
+lanes = Array[int]([5, 5])
+prior_mag = 140.85034
+next_mag = 42.945557
+prior_pt_init = NodePath("../RP_001")
+next_pt_init = NodePath("../RP_006")
+
+[node name="tube" parent="." unique_id=921547132 instance=ExtResource("31_8pmjg")]
+transform = Transform3D(-2.5881906, 9.659258, -4.2221959e-07, 0, -4.371139e-07, -10, -9.659258, -2.5881906, 1.13133396e-07, -40.69481, 40.7615, -120.0638)
+
+[node name="CSGPolygon3D" type="CSGPolygon3D" parent="." unique_id=1787560569]
+transform = Transform3D(-0.94264156, 0, -0.33380675, 0, 1, 0, 0.33380675, 0, -0.94264156, 35.869328, 23.975912, -150.58481)
+material_override = SubResource("StandardMaterial3D_6u0p0")
+use_collision = true
+polygon = PackedVector2Array(0, 0, 18, 6.971, 18, 0)
+depth = 15.0
+
+[node name="CSGMesh3D" type="CSGMesh3D" parent="." unique_id=534979552]
+transform = Transform3D(9.205049, 3.9073112, -1.70794e-07, 0, -4.371139e-07, -10, -3.9073112, 9.205049, -4.0236546e-07, -53.457954, 25.665035, 20.224302)
+use_collision = true
+mesh = SubResource("BoxMesh_1np08")
+material = SubResource("StandardMaterial3D_uxkab")
+
+[node name="CSGMesh3D2" type="CSGMesh3D" parent="." unique_id=15725329]
+transform = Transform3D(-3.4708943, 9.378321, -4.0993942e-07, -4.2988913e-15, -4.3711387e-07, -10, -9.378321, -3.4708943, 1.5171761e-07, -141.60974, 50.881554, -10.627619)
+use_collision = true
+mesh = SubResource("BoxMesh_cu53s")
+material = SubResource("StandardMaterial3D_uxkab")
+
+[node name="wall" parent="." unique_id=2071536755 instance=ExtResource("34_cu53s")]
+transform = Transform3D(-2.7655895, 0, -1.1625468, 0, 3, 0, 1.1625468, 0, -2.7655895, -31.152985, 27.801613, 89.95157)
+
+[node name="wall2" parent="." unique_id=1315983590 instance=ExtResource("34_cu53s")]
+transform = Transform3D(2.7795856, 2.429991e-07, -1.128673, -2.6226832e-07, 3, 0, -1.1286727, -9.867172e-08, -2.779586, 76.302, 28.203, 45.638744)
+
+[node name="loop" parent="." unique_id=1894044074 instance=ExtResource("35_cu53s")]
+transform = Transform3D(-2.6887915, 0.8872041, 6.4018183, 0.34355724, 6.9435487, -0.81798506, -6.453867, 0, -2.7106514, 47.401726, 44.27695, -48.57412)
+
+[editable path="Car/body"]

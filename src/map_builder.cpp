@@ -30,15 +30,12 @@ MapBuilder::~MapBuilder() {
 
 void MapBuilder::_ready() {
 	// Don't load the map in the editor — only when running the game.
-	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
+	//if (Engine::get_singleton()->is_editor_hint()) return;
 	load_map();
 }
 
 void MapBuilder::_process(double delta) {
-	if (Engine::get_singleton()->is_editor_hint())
-		return;
+	// if (Engine::get_singleton()->is_editor_hint()) return;
 	if (!loaded)
 		return;
 
