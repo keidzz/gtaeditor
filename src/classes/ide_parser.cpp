@@ -230,8 +230,33 @@ IdeResult IdeParser::parse(const String &p_absolute_path) {
 				parse_2dfx_light(tokens, result, p_absolute_path.get_file());
 				break;
 
+			case IdeSection::CARS: {
+				// CARS: Id, ModelName, TxdName, Type, HandlingId, GameName, Anims,
+				// Class, Frq, Lvl, Comprules, [WheelModelId, WheelScale] ...
+				// Field count/meaning after TxdName varies by vehicle type (car/
+				// boat/bike/heli/plane/trailer), but Id/ModelName/TxdName are in
+				// the same first three positions for every type (see
+				// gtamods.com/wiki/Item_Definition#Cars_section), so that's all
+				// we pull out here. draw_distance/flags aren't meaningful for
+				// vehicles the way they are for OBJS/TOBJ — SA doesn't define a
+				// per-vehicle draw distance in CARS — so we default them to a
+				// flat fallback; GTAVehicleInstance/GTAModelInstance's
+				// use_streaming only uses this as a last-resort fade distance.
+				if (tokens.size() < 3)
+					break;
+
+				ItemDefinition def;
+				def.id = tokens[0].to_int();
+				def.model_name = tokens[1];
+				def.txd_name = tokens[2];
+				def.draw_distance = 300.0f;
+				def.flags = 0;
+
+				result.definitions[def.id] = def;
+			} break;
+
 			default:
-				// CARS, PEDS, WEAP, 2DFX, UNKNOWN — skip for map loading.
+				// PEDS, WEAP, 2DFX, UNKNOWN — skip for map loading.
 				break;
 		}
 	}

@@ -1,10 +1,12 @@
 #include "map_builder.h"
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
+#include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
+#include <godot_cpp/classes/sub_viewport.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
@@ -20,8 +22,9 @@ namespace godot {
 
 MapBuilder::MapBuilder() {}
 MapBuilder::~MapBuilder() {
-	models.clear();
-	textures.clear();
+	// models/textures now live on the shared GtaResourceProvider singleton —
+	// other GTAModelInstance/GTAVehicleInstance/MapBuilder nodes may still be
+	// using them, so this destructor must NOT clear them anymore.
 	spawned_nodes.clear();
 	spawned_lights.clear();
 }
@@ -31,13 +34,17 @@ MapBuilder::~MapBuilder() {
 // =============================================================================
 
 void MapBuilder::_ready() {
-	// Don't load the map in the editor — only when running the game.
-	//if (Engine::get_singleton()->is_editor_hint()) return;
+	// Only load automatically at runtime, unless load_map_in_editor opts in.
+	if (Engine::get_singleton()->is_editor_hint() && !load_map_in_editor) {
+		return;
+	}
 	load_map();
 }
 
 void MapBuilder::_process(double delta) {
-	// if (Engine::get_singleton()->is_editor_hint()) return;
+	if (Engine::get_singleton()->is_editor_hint() && !load_map_in_editor) {
+		return;
+	}
 	if (!loaded)
 		return;
 
@@ -48,7 +55,7 @@ void MapBuilder::_process(double delta) {
 		return;
 
 	Vector3 cam_pos = Vector3(0, 0, 0);
-	Camera3D *cam = get_viewport()->get_camera_3d();
+	Camera3D *cam = get_active_camera();
 	if (cam) {
 		cam_pos = cam->get_global_position();
 	}
@@ -118,56 +125,41 @@ void MapBuilder::load_map() {
 	if (loaded)
 		return;
 
-	// Resolve GTA path to absolute.
-	String abs_gta_path;
-	if (gta_path.begins_with("res://")) {
-		abs_gta_path = ProjectSettings::get_singleton()->globalize_path(gta_path);
-	} else {
-		abs_gta_path = gta_path;
-	}
-
-	if (!abs_gta_path.ends_with("/")) {
-		abs_gta_path += "/";
-	}
-
-	path_resolver.set_root(abs_gta_path);
-
-	if (debug_enabled) {
-		UtilityFunctions::print("[MapBuilder] GTA path: ", abs_gta_path);
-	}
-
-	// 1. Load IMG archive (models/gta3.img).
-	String img_path = path_resolver.resolve("models/gta3.img");
-	if (img_path.is_empty()) {
-		UtilityFunctions::printerr("[MapBuilder] Could not find models/gta3.img");
+	// 1-3, 6 (path resolution, IMG archive, default.dat/gta.dat IDE parsing,
+	// DFF/TXD/COL indexing) now live on the shared provider so any
+	// GTAModelInstance/GTAVehicleInstance can trigger/reuse the same load.
+	resources = GtaResourceProvider::get_singleton();
+	if (!resources->ensure_loaded(gta_path)) {
+		UtilityFunctions::printerr("[MapBuilder] Failed to load shared GTA resources from '", gta_path, "'.");
 		return;
 	}
-	img_archive.load(img_path);
 
-	// 2. Parse default.dat.
-	String default_dat_path = path_resolver.resolve("data/default.dat");
+	GtaPathResolver *path_resolver = resources->get_path_resolver();
+
+	if (debug_enabled) {
+		UtilityFunctions::print("[MapBuilder] Using GTA path: ", path_resolver->get_root());
+	}
+
+	// 4/5. Parse default.dat/gta.dat again here for their IPL/COL lists and
+	// build this MapBuilder's own `placements` array (streaming binary IPLs +
+	// LOD resolution). Re-parsing these two small text files is cheap; the
+	// heavy IMG/IDE work above already happened at most once via the provider.
+	String default_dat_path = path_resolver->resolve("data/default.dat");
 	if (!default_dat_path.is_empty()) {
 		load_dat_file(default_dat_path);
 	}
 
-	// 3. Parse gta.dat.
-	String gta_dat_path = path_resolver.resolve("data/gta.dat");
+	String gta_dat_path = path_resolver->resolve("data/gta.dat");
 	if (!gta_dat_path.is_empty()) {
 		load_dat_file(gta_dat_path);
 	}
 
-	// 4. Load streaming binary IPLs from IMG.
 	load_streaming_ipls();
-
-	// 5. Resolve LOD links.
 	resolve_lods();
-
-	// 6. Index all DFF/TXD entries from IMG.
-	index_img_assets();
 
 	// 7. Load water if enabled.
 	if (load_water) {
-		String water_path = path_resolver.resolve("data/water.dat");
+		String water_path = path_resolver->resolve("data/water.dat");
 		if (!water_path.is_empty()) {
 			Vector<WaterPlane> water_planes = WaterParser::parse(water_path);
 			MeshInstance3D *water_instance = MapWaterLoader::build_water_mesh(water_planes);
@@ -183,12 +175,14 @@ void MapBuilder::load_map() {
 	loaded = true;
 	emit_signal("map_loaded");
 
+	const HashMap<int32_t, ItemDefinition> &definitions = resources->get_all_definitions();
+
 	int total_lights = 0;
 	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
 		total_lights += kv.value.lights.size();
 	}
 	UtilityFunctions::print("[MapBuilder]   2dfx Lights:  ", total_lights);
-	
+
 	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
 		if (kv.value.lights.size() > 0) {
 			UtilityFunctions::print("[MapBuilder]   Light def: id=", kv.key,
@@ -208,8 +202,8 @@ void MapBuilder::load_map() {
 		UtilityFunctions::print("[MapBuilder] ===== Loading Complete =====");
 		UtilityFunctions::print("[MapBuilder]   Definitions: ", definitions.size());
 		UtilityFunctions::print("[MapBuilder]   Placements:  ", placements.size());
-		UtilityFunctions::print("[MapBuilder]   Models:      ", models.get_model_count());
-		UtilityFunctions::print("[MapBuilder]   Textures:    ", textures.get_txd_count());
+		UtilityFunctions::print("[MapBuilder]   Models:      ", resources->get_models()->get_model_count());
+		UtilityFunctions::print("[MapBuilder]   Textures:    ", resources->get_textures()->get_txd_count());
 		UtilityFunctions::print("[MapBuilder] ==============================");
 	}
 
@@ -219,7 +213,7 @@ void MapBuilder::load_map() {
 
 	// Build stream_order index array and sort by distance to initial camera position.
 	Vector3 start_pos = Vector3(0, 0, 0);
-	Camera3D *cam = get_viewport()->get_camera_3d();
+	Camera3D *cam = get_active_camera();
 	if (cam) {
 		start_pos = cam->get_global_position();
 	}
@@ -238,16 +232,20 @@ void MapBuilder::load_map() {
 void MapBuilder::load_dat_file(const String &p_dat_path) {
 	DatResult dat = DatParser::parse(p_dat_path);
 
-	// Load IDEs.
-	for (int i = 0; i < dat.ide_paths.size(); i++) {
-		load_ide_file(dat.ide_paths[i]);
-	}
+	// NOTE: IDE loading used to happen here — it's now handled once, up
+	// front, by resources->ensure_loaded() (see GtaResourceProvider), so
+	// GTAModelInstance/GTAVehicleInstance get the exact same definitions
+	// without needing a MapBuilder to run first. Everything below is
+	// placement-specific and stays here since only MapBuilder owns `placements`.
+
+	ImgArchive *img_archive = resources->get_img_archive();
+	GtaPathResolver *path_resolver = resources->get_path_resolver();
 
 	// Load COLs.
 	for (int i = 0; i < dat.col_paths.size(); i++) {
-		String resolved = path_resolver.resolve(dat.col_paths[i]);
+		String resolved = path_resolver->resolve(dat.col_paths[i]);
 		if (!resolved.is_empty()) {
-			models.load_col_file(resolved);
+			resources->get_models()->load_col_file(resolved);
 		}
 	}
 
@@ -270,11 +268,11 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 		for (int stream_idx = 0;; stream_idx++) {
 			String stream_name = basename + "_stream" + String::num_int64(stream_idx) + ".ipl";
 
-			if (!img_archive.has_entry(stream_name)) {
+			if (!img_archive->has_entry(stream_name)) {
 				break;
 			}
 
-			PackedByteArray data = img_archive.read_entry(stream_name);
+			PackedByteArray data = img_archive->read_entry(stream_name);
 			if (data.size() < 4)
 				break;
 
@@ -288,9 +286,10 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 			// Fill in model names and draw distances from definitions.
 			for (int j = 0; j < stream_placements.size(); j++) {
 				int32_t def_id = stream_placements[j].definition_id;
-				if (definitions.has(def_id)) {
-					stream_placements.ptrw()[j].item_name = definitions[def_id].model_name.to_lower();
-					stream_placements.ptrw()[j].draw_distance = definitions[def_id].draw_distance;
+				ItemDefinition def;
+				if (resources->find_definition(def_id, def)) {
+					stream_placements.ptrw()[j].item_name = def.model_name.to_lower();
+					stream_placements.ptrw()[j].draw_distance = def.draw_distance;
 				}
 			}
 
@@ -307,7 +306,8 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 				int32_t global_lod_idx = region_start + lod_idx;
 				if (global_lod_idx < region_end) {
 					int32_t def_id = placements[idx].definition_id;
-					float hd_dist = definitions.has(def_id) ? definitions[def_id].draw_distance * draw_distance_multiplier : streaming_distance;
+					ItemDefinition def;
+					float hd_dist = resources->find_definition(def_id, def) ? def.draw_distance * draw_distance_multiplier : streaming_distance;
 
 					if (placements[global_lod_idx].lod_begin_distance < 0.0f) {
 						placements.ptrw()[global_lod_idx].lod_begin_distance = hd_dist;
@@ -324,35 +324,8 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 	// We stream the placements dynamically, so we don't need to sort them here.
 }
 
-void MapBuilder::load_ide_file(const String &p_ide_path) {
-	String resolved = path_resolver.resolve(p_ide_path);
-	if (resolved.is_empty()) {
-		UtilityFunctions::print("[MapBuilder] IDE no encontrado: ", p_ide_path);
-		return;
-	}
-
-	IdeResult result = IdeParser::parse(resolved);
-
-	int lights_in_file = 0;
-	for (const KeyValue<int32_t, ItemDefinition> &kv : result.definitions) {
-		lights_in_file += kv.value.lights.size();
-	}
-	UtilityFunctions::print("[MapBuilder] IDE: ", p_ide_path, " -> ", result.definitions.size(), " defs, ", lights_in_file, " luces 2dfx");
-
-	// Merge definitions.
-	for (const KeyValue<int32_t, ItemDefinition> &kv : result.definitions) {
-		definitions[kv.key] = kv.value;
-	}
-
-	// Register texture parents.
-	for (int i = 0; i < result.texture_parents.size(); i++) {
-		textures.add_parent(result.texture_parents[i].child_name,
-				result.texture_parents[i].parent_name);
-	}
-}
-
 void MapBuilder::load_text_ipl(const String &p_ipl_path) {
-	String resolved = path_resolver.resolve(p_ipl_path);
+	String resolved = resources->get_path_resolver()->resolve(p_ipl_path);
 	if (resolved.is_empty()) {
 		return;
 	}
@@ -361,8 +334,9 @@ void MapBuilder::load_text_ipl(const String &p_ipl_path) {
 
 	for (int i = 0; i < ipl_placements.size(); i++) {
 		int32_t def_id = ipl_placements[i].definition_id;
-		if (definitions.has(def_id)) {
-			ipl_placements.ptrw()[i].draw_distance = definitions[def_id].draw_distance;
+		ItemDefinition def;
+		if (resources->find_definition(def_id, def)) {
+			ipl_placements.ptrw()[i].draw_distance = def.draw_distance;
 		}
 	}
 
@@ -388,28 +362,9 @@ void MapBuilder::resolve_lods() {
 	// This function is kept for compatibility.
 }
 
-void MapBuilder::index_img_assets() {
-	// Register all DFF files from the IMG archive.
-	Vector<String> dff_entries = img_archive.get_entries_with_extension(".dff");
-	for (int i = 0; i < dff_entries.size(); i++) {
-		models.register_dff(dff_entries[i], &img_archive);
-	}
-
-	// Register all TXD files from the IMG archive.
-	Vector<String> txd_entries = img_archive.get_entries_with_extension(".txd");
-	for (int i = 0; i < txd_entries.size(); i++) {
-		textures.register_txd(txd_entries[i], &img_archive);
-	}
-
-	// Parse all COL files from the IMG archive.
-	Vector<String> col_entries = img_archive.get_entries_with_extension(".col");
-	for (int i = 0; i < col_entries.size(); i++) {
-		PackedByteArray data = img_archive.read_entry(col_entries[i]);
-		if (!data.is_empty()) {
-			models.load_col_bytes(data, col_entries[i]);
-		}
-	}
-}
+// NOTE: index_img_assets() (DFF/TXD/COL registration into ModelCollection/
+// TextureCollection) moved to GtaResourceProvider::index_img_assets() — it's
+// now shared, one-time, session-wide state instead of a per-MapBuilder step.
 
 // =============================================================================
 // Spawn all placements at once
@@ -427,24 +382,43 @@ void MapBuilder::spawn_all() {
 Node3D *MapBuilder::spawn_placement(int32_t p_index) {
 	const ItemPlacement &placement = placements[p_index];
 
-	// Look up the item definition.
-	if (!definitions.has(placement.definition_id)) {
+	// Look up the item definition (zero-copy — this runs on every streamed-in object).
+	const ItemDefinition *def_ptr = resources->find_definition_ptr(placement.definition_id);
+	if (def_ptr == nullptr) {
 		return nullptr;
 	}
+	const ItemDefinition &def = *def_ptr;
 
-	const ItemDefinition &def = definitions[placement.definition_id];
+	ModelCollection *models = resources->get_models();
+	TextureCollection *textures = resources->get_textures();
+
 	Node3D *placement_root = memnew(Node3D);
+	// Name it after the GTA model instead of leaving Godot's default
+	// "@Node3D@N" — makes the Remote scene tree actually debuggable.
+	//
+	// IMPORTANT: appending p_index makes this name unique by construction.
+	// Godot enforces unique names among siblings, and when a name collides
+	// it retries name2, name3, name4... until it finds a free slot — cheap
+	// once in a while, but ruinous here: the same prop (e.g. "lamppost1")
+	// repeats hundreds of times across a GTA map, and this function runs on
+	// every single streamed-in object, so a colliding name means Godot
+	// re-scans an ever-growing run of siblings on every spawn as more of
+	// that same prop accumulates in the tree. Suffixing with p_index (unique
+	// per placement, guaranteed no collision) keeps the name meaningful
+	// while making that retry loop a no-op every time.
+	placement_root->set_name(def.model_name + String("_") + String::num_int64(p_index));
 	placement_root->set_position(placement.position);
 	placement_root->set_quaternion(placement.rotation);
 
 	// Get the mesh (lazy DFF parse).
 	String model_name = def.model_name.to_lower();
-	Ref<ArrayMesh> mesh = models.get_mesh(model_name);
+	Ref<ArrayMesh> mesh = models->get_mesh(model_name);
 	if (mesh.is_valid() && mesh->get_surface_count() > 0) {
 		// Get material info.
-		Vector<DffMaterial> materials = models.get_materials(model_name);
+		Vector<DffMaterial> materials = models->get_materials(model_name);
 
 		MeshInstance3D *instance = memnew(MeshInstance3D);
+		instance->set_name(model_name); // Single child of placement_root — never collides, cheap either way.
 		instance->set_mesh(mesh);
 		placement_root->add_child(instance);
 
@@ -453,7 +427,7 @@ Node3D *MapBuilder::spawn_placement(int32_t p_index) {
 		// Add static collision body if enabled (only for HD models, skip LODs).
 		if (load_collisions && !is_lod) {
 			ColModel col_model;
-			if (models.get_col_model(model_name, col_model)) {
+			if (models->get_col_model(model_name, col_model)) {
 				StaticBody3D *body = memnew(StaticBody3D);
 				for (int i = 0; i < col_model.shapes.size(); i++) {
 					CollisionShape3D *col = memnew(CollisionShape3D);
@@ -483,7 +457,7 @@ Node3D *MapBuilder::spawn_placement(int32_t p_index) {
 
 		// Apply materials to each surface.
 		for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
-			Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, textures);
+			Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, *textures);
 			if (mat.is_valid()) {
 				instance->set_surface_override_material(s, mat);
 			}
@@ -520,7 +494,7 @@ void MapBuilder::spawn_2dfx_lights(Node3D *p_placement_root, const ItemDefinitio
 	}
 
 	// SA: 2dfx embebido en el propio DFF (farolas, neones, etc.)
-	Vector<Dff2dfxLight> dff_lights = models.get_2dfx_lights(p_definition.model_name.to_lower());
+	Vector<Dff2dfxLight> dff_lights = resources->get_models()->get_2dfx_lights(p_definition.model_name.to_lower());
 	for (int i = 0; i < dff_lights.size(); i++) {
 		const Dff2dfxLight &source = dff_lights[i];
 		spawn_one(source.local_offset, source.red, source.green, source.blue, source.alpha, source.pointlight_range);
@@ -595,6 +569,21 @@ void MapBuilder::sort_stream_order(const Vector3 &cam_pos) {
 	last_sort_position = cam_pos;
 }
 
+Camera3D *MapBuilder::get_active_camera() const {
+	if (Engine::get_singleton()->is_editor_hint() && load_map_in_editor) {
+		EditorInterface *ei = EditorInterface::get_singleton();
+		if (ei != nullptr) {
+			SubViewport *editor_vp = ei->get_editor_viewport_3d(0);
+			if (editor_vp != nullptr && editor_vp->get_camera_3d() != nullptr) {
+				return editor_vp->get_camera_3d();
+			}
+		}
+		// Fall through if the editor camera isn't available yet (e.g. the
+		// very first frame after enabling the option).
+	}
+	return get_viewport()->get_camera_3d();
+}
+
 // =============================================================================
 // Property accessors
 // =============================================================================
@@ -620,6 +609,14 @@ bool MapBuilder::get_load_water() const { return load_water; }
 void MapBuilder::set_gta_path(const String &p_path) { gta_path = p_path; }
 String MapBuilder::get_gta_path() const { return gta_path; }
 
+void MapBuilder::set_load_map_in_editor(bool p_enabled) {
+	load_map_in_editor = p_enabled;
+	if (p_enabled && is_inside_tree() && Engine::get_singleton()->is_editor_hint() && !loaded) {
+		load_map();
+	}
+}
+bool MapBuilder::get_load_map_in_editor() const { return load_map_in_editor; }
+
 // =============================================================================
 // Shared-resource access
 // =============================================================================
@@ -629,30 +626,19 @@ bool MapBuilder::is_loaded() const {
 }
 
 ModelCollection *MapBuilder::get_model_collection() {
-	return &models;
+	return resources != nullptr ? resources->get_models() : GtaResourceProvider::get_singleton()->get_models();
 }
 
 TextureCollection *MapBuilder::get_texture_collection() {
-	return &textures;
+	return resources != nullptr ? resources->get_textures() : GtaResourceProvider::get_singleton()->get_textures();
 }
 
 bool MapBuilder::find_definition(int32_t p_id, ItemDefinition &r_definition) {
-	if (!definitions.has(p_id)) {
-		return false;
-	}
-	r_definition = definitions[p_id];
-	return true;
+	return GtaResourceProvider::get_singleton()->find_definition(p_id, r_definition);
 }
 
 bool MapBuilder::find_definition_by_model_name(const String &p_model_name, ItemDefinition &r_definition) {
-	String target = p_model_name.to_lower();
-	for (const KeyValue<int32_t, ItemDefinition> &kv : definitions) {
-		if (kv.value.model_name.to_lower() == target) {
-			r_definition = kv.value;
-			return true;
-		}
-	}
-	return false;
+	return GtaResourceProvider::get_singleton()->find_definition_by_model_name(p_model_name, r_definition);
 }
 
 // =============================================================================
@@ -687,6 +673,10 @@ void MapBuilder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_gta_path", "path"), &MapBuilder::set_gta_path);
 	ClassDB::bind_method(D_METHOD("get_gta_path"), &MapBuilder::get_gta_path);
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "gta_path"), "set_gta_path", "get_gta_path");
+
+	ClassDB::bind_method(D_METHOD("set_load_map_in_editor", "enabled"), &MapBuilder::set_load_map_in_editor);
+	ClassDB::bind_method(D_METHOD("get_load_map_in_editor"), &MapBuilder::get_load_map_in_editor);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "load_map_in_editor"), "set_load_map_in_editor", "get_load_map_in_editor");
 
 	ADD_SIGNAL(MethodInfo("map_loaded"));
 }

@@ -3,6 +3,7 @@
 
 #include "classes/dat_parser.h"
 #include "classes/gta_path_resolver.h"
+#include "classes/gta_resource_provider.h"
 #include "classes/ide_parser.h"
 #include "classes/img_archive.h"
 #include "classes/ipl_parser.h"
@@ -30,9 +31,14 @@ namespace godot {
 // =============================================================================
 // MapBuilder — Main GDExtension Node3D that loads the GTA SA map.
 //
-// On _ready(), it parses all game data files and spawns all objects at once
-// (matching the Unity reference behavior). Godot's visibility_range is used
-// for distance-based culling instead of manual streaming.
+// On _ready(), it resolves the shared GtaResourceProvider (parsing game data
+// files / indexing the IMG archive at most once per session), then loads its
+// own placement (IPL) data and streams placements in/out via _process()
+// based on distance to the active camera. Godot's visibility_range is used
+// for distance-based fade in addition to the manual add/remove streaming.
+//
+// By default this only runs at actual runtime; set load_map_in_editor to
+// also stream while editing the scene, using the editor's 3D viewport camera.
 // =============================================================================
 
 class MapBuilder : public Node3D {
@@ -73,6 +79,12 @@ public:
 	void set_gta_path(const String &p_path);
 	String get_gta_path() const;
 
+	// When enabled, the map loads and streams while simply editing the scene
+	// (no Play required), using the editor's active 3D viewport camera as the
+	// streaming origin instead of the runtime game camera.
+	void set_load_map_in_editor(bool p_enabled);
+	bool get_load_map_in_editor() const;
+
 	// -- Shared-resource access -------------------------------------------------
 	// Lets other nodes (e.g. GTAModelInstance) reuse the SAME ImgArchive-backed
 	// ModelCollection/TextureCollection and parsed IDE definitions instead of
@@ -81,14 +93,12 @@ public:
 	ModelCollection *get_model_collection();
 	TextureCollection *get_texture_collection();
 
-	// Looks up a parsed IDE definition by its numeric id. Only OBJS/TOBJ/ANIM
-	// entries are indexed here — CARS (vehicle) entries are not currently
-	// parsed by IdeParser, so vehicle ids will return false. Use
-	// find_definition_by_model_name() instead for vehicles.
+	// Looks up a parsed IDE definition by its numeric id. Forwards to the
+	// shared GtaResourceProvider. See ide_parser.h for which sections
+	// (OBJS/TOBJ/ANIM/CARS) are currently indexed.
 	bool find_definition(int32_t p_id, ItemDefinition &r_definition);
 
 	// Looks up a parsed IDE definition by model (.dff) name, case-insensitive.
-	// Same OBJS/TOBJ/ANIM-only limitation as find_definition().
 	bool find_definition_by_model_name(const String &p_model_name, ItemDefinition &r_definition);
 
 protected:
@@ -105,15 +115,16 @@ private:
 	float streetlight_energy = 1.0f;
 	bool streetlight_shadows = false;
 	String gta_path = "res://gta/";
+	bool load_map_in_editor = false;
 
 	// -- Internal state --
 	bool loaded = false;
-	GtaPathResolver path_resolver;
-	ImgArchive img_archive;
-	HashMap<int32_t, ItemDefinition> definitions;
+	// Models/textures/IDE definitions/IMG archive are now owned by the shared
+	// GtaResourceProvider singleton (set on first load_map()) instead of by
+	// MapBuilder itself, so GTAModelInstance/GTAVehicleInstance can reuse the
+	// exact same loaded data without needing a MapBuilder node in the scene.
+	GtaResourceProvider *resources = nullptr;
 	Vector<ItemPlacement> placements;
-	ModelCollection models;
-	TextureCollection textures;
 
 	// -- Streaming state --
 	int stream_process_index = 0;
@@ -125,13 +136,15 @@ private:
 	float last_night_light_factor = -1.0f;
 
 	// -- Loading methods --
+	// NOTE: IDE parsing and IMG asset indexing (load_ide_file/index_img_assets)
+	// moved to GtaResourceProvider — MapBuilder's load_dat_file() now only
+	// handles the placement-specific parts (COL files, text/streaming IPLs,
+	// LOD resolution) that depend on this MapBuilder's own `placements` array.
 	void load_map();
 	void load_dat_file(const String &p_dat_path);
-	void load_ide_file(const String &p_ide_path);
 	void load_text_ipl(const String &p_ipl_path);
 	void load_streaming_ipls();
 	void resolve_lods();
-	void index_img_assets();
 	void spawn_all();
 
 	// -- Spawning methods --
@@ -143,6 +156,11 @@ private:
 
 	// -- Streaming order --
 	void sort_stream_order(const Vector3 &cam_pos);
+
+	// Returns the editor's active 3D viewport camera when load_map_in_editor
+	// is enabled and we're running inside the editor; otherwise the normal
+	// runtime viewport camera (get_viewport()->get_camera_3d()), same as before.
+	Camera3D *get_active_camera() const;
 };
 
 } // namespace godot

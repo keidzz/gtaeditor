@@ -466,6 +466,116 @@ void DffParserInternal::parse_string_section(int32_t size, RWSectionType parent_
 }
 
 // =============================================================================
+// Builds a standalone ArrayMesh (+ per-surface materials) for exactly one
+// parsed geometry entry. Factored out so both the merged "one mesh for the
+// whole clump" path (props, used by MapBuilder/GTAModelInstance) and the new
+// "one mesh per named part" path (vehicles, used by GTAVehicleInstance) share
+// the exact same vertex/index/color assembly code.
+// =============================================================================
+
+static void build_geometry_mesh(const ParsedGeometry &geom, Ref<ArrayMesh> &r_mesh, Vector<DffMaterial> &r_materials) {
+	r_mesh.instantiate();
+	r_materials.clear();
+
+	if (geom.vertices.is_empty()) {
+		return;
+	}
+
+	// Convert vertex data to Godot packed arrays.
+	PackedVector3Array packed_vertices;
+	PackedVector3Array packed_normals;
+	PackedVector2Array packed_uvs;
+	PackedColorArray packed_colors;
+
+	packed_vertices.resize(geom.vertices.size());
+	for (int i = 0; i < geom.vertices.size(); i++) {
+		packed_vertices.set(i, geom.vertices[i]);
+	}
+
+	packed_normals.resize(geom.vertices.size());
+	if (!geom.normals.is_empty()) {
+		for (int i = 0; i < geom.normals.size(); i++) {
+			packed_normals.set(i, geom.normals[i]);
+		}
+	} else {
+		packed_normals.fill(Vector3(0, 1, 0));
+	}
+
+	packed_uvs.resize(geom.vertices.size());
+	if (!geom.uvs.is_empty()) {
+		for (int i = 0; i < geom.uvs.size(); i++) {
+			packed_uvs.set(i, geom.uvs[i]);
+		}
+	} else {
+		packed_uvs.fill(Vector2(0, 0));
+	}
+
+	packed_colors.resize(geom.vertices.size());
+	if (!geom.colors.is_empty()) {
+		for (int i = 0; i < geom.colors.size(); i++) {
+			packed_colors.set(i, geom.colors[i]);
+		}
+	} else {
+		packed_colors.fill(Color(1, 1, 1, 1));
+	}
+
+	// Build surfaces from BinMesh sub-meshes (or fallback triangles).
+	if (geom.has_bin_mesh && !geom.sub_meshes.is_empty()) {
+		for (int s = 0; s < geom.sub_meshes.size(); s++) {
+			const ParsedGeometry::SubMesh &sm = geom.sub_meshes[s];
+			if (sm.indices.is_empty())
+				continue;
+
+			PackedInt32Array packed_indices;
+			packed_indices.resize(sm.indices.size());
+			for (int i = 0; i < sm.indices.size(); i++) {
+				packed_indices.set(i, sm.indices[i]);
+			}
+
+			Array arrays;
+			arrays.resize(Mesh::ARRAY_MAX);
+			arrays[Mesh::ARRAY_VERTEX] = packed_vertices;
+			arrays[Mesh::ARRAY_NORMAL] = packed_normals;
+			arrays[Mesh::ARRAY_TEX_UV] = packed_uvs;
+			arrays[Mesh::ARRAY_COLOR] = packed_colors;
+			arrays[Mesh::ARRAY_INDEX] = packed_indices;
+
+			r_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+
+			// Track which material this surface uses.
+			if (sm.material_index >= 0 && sm.material_index < geom.materials.size()) {
+				r_materials.push_back(geom.materials[sm.material_index]);
+			} else {
+				r_materials.push_back(DffMaterial());
+			}
+		}
+	} else if (!geom.fallback_triangles.is_empty()) {
+		// Single surface with fallback triangles.
+		PackedInt32Array packed_indices;
+		packed_indices.resize(geom.fallback_triangles.size());
+		for (int i = 0; i < geom.fallback_triangles.size(); i++) {
+			packed_indices.set(i, geom.fallback_triangles[i]);
+		}
+
+		Array arrays;
+		arrays.resize(Mesh::ARRAY_MAX);
+		arrays[Mesh::ARRAY_VERTEX] = packed_vertices;
+		arrays[Mesh::ARRAY_NORMAL] = packed_normals;
+		arrays[Mesh::ARRAY_TEX_UV] = packed_uvs;
+		arrays[Mesh::ARRAY_COLOR] = packed_colors;
+		arrays[Mesh::ARRAY_INDEX] = packed_indices;
+
+		r_mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+
+		if (!geom.materials.is_empty()) {
+			r_materials.push_back(geom.materials[0]);
+		} else {
+			r_materials.push_back(DffMaterial());
+		}
+	}
+}
+
+// =============================================================================
 // Public API — parse a DFF file from raw bytes
 // =============================================================================
 
@@ -509,106 +619,61 @@ DffResult DffParser::parse(const PackedByteArray &p_data) {
 
 	for (int g = 0; g < active_geometries.size(); g++) {
 		const ParsedGeometry &geom = parser.geometries[active_geometries[g]];
-		
+
 		result.lights.append_array(geom.lights);
 
 		if (geom.vertices.is_empty()) {
 			continue;
 		}
 
-		// Convert vertex data to Godot packed arrays.
-		PackedVector3Array packed_vertices;
-		PackedVector3Array packed_normals;
-		PackedVector2Array packed_uvs;
-		PackedColorArray packed_colors;
+		// Build this geometry into a small standalone mesh, then fold its
+		// surfaces into the merged result.mesh — output is identical to the
+		// previous inline version, just routed through the shared helper.
+		Ref<ArrayMesh> part_mesh;
+		Vector<DffMaterial> part_materials;
+		build_geometry_mesh(geom, part_mesh, part_materials);
 
-		packed_vertices.resize(geom.vertices.size());
-		for (int i = 0; i < geom.vertices.size(); i++) {
-			packed_vertices.set(i, geom.vertices[i]);
-		}
-
-		packed_normals.resize(geom.vertices.size());
-		if (!geom.normals.is_empty()) {
-			for (int i = 0; i < geom.normals.size(); i++) {
-				packed_normals.set(i, geom.normals[i]);
-			}
-		} else {
-			packed_normals.fill(Vector3(0, 1, 0));
-		}
-
-		packed_uvs.resize(geom.vertices.size());
-		if (!geom.uvs.is_empty()) {
-			for (int i = 0; i < geom.uvs.size(); i++) {
-				packed_uvs.set(i, geom.uvs[i]);
-			}
-		} else {
-			packed_uvs.fill(Vector2(0, 0));
-		}
-
-		packed_colors.resize(geom.vertices.size());
-		if (!geom.colors.is_empty()) {
-			for (int i = 0; i < geom.colors.size(); i++) {
-				packed_colors.set(i, geom.colors[i]);
-			}
-		} else {
-			packed_colors.fill(Color(1, 1, 1, 1));
-		}
-
-		// Build surfaces from BinMesh sub-meshes (or fallback triangles).
-		if (geom.has_bin_mesh && !geom.sub_meshes.is_empty()) {
-			for (int s = 0; s < geom.sub_meshes.size(); s++) {
-				const ParsedGeometry::SubMesh &sm = geom.sub_meshes[s];
-				if (sm.indices.is_empty())
-					continue;
-
-				PackedInt32Array packed_indices;
-				packed_indices.resize(sm.indices.size());
-				for (int i = 0; i < sm.indices.size(); i++) {
-					packed_indices.set(i, sm.indices[i]);
-				}
-
-				Array arrays;
-				arrays.resize(Mesh::ARRAY_MAX);
-				arrays[Mesh::ARRAY_VERTEX] = packed_vertices;
-				arrays[Mesh::ARRAY_NORMAL] = packed_normals;
-				arrays[Mesh::ARRAY_TEX_UV] = packed_uvs;
-				arrays[Mesh::ARRAY_COLOR] = packed_colors;
-				arrays[Mesh::ARRAY_INDEX] = packed_indices;
-
-				result.mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-
-				// Track which material this surface uses.
-				if (sm.material_index >= 0 && sm.material_index < geom.materials.size()) {
-					result.materials.push_back(geom.materials[sm.material_index]);
-				} else {
-					result.materials.push_back(DffMaterial());
-				}
-			}
-		} else if (!geom.fallback_triangles.is_empty()) {
-			// Single surface with fallback triangles.
-			PackedInt32Array packed_indices;
-			packed_indices.resize(geom.fallback_triangles.size());
-			for (int i = 0; i < geom.fallback_triangles.size(); i++) {
-				packed_indices.set(i, geom.fallback_triangles[i]);
-			}
-
-			Array arrays;
-			arrays.resize(Mesh::ARRAY_MAX);
-			arrays[Mesh::ARRAY_VERTEX] = packed_vertices;
-			arrays[Mesh::ARRAY_NORMAL] = packed_normals;
-			arrays[Mesh::ARRAY_TEX_UV] = packed_uvs;
-			arrays[Mesh::ARRAY_COLOR] = packed_colors;
-			arrays[Mesh::ARRAY_INDEX] = packed_indices;
-
-			result.mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
-
-			if (!geom.materials.is_empty()) {
-				result.materials.push_back(geom.materials[0]);
-			} else {
-				result.materials.push_back(DffMaterial());
-			}
+		for (int s = 0; s < part_mesh->get_surface_count(); s++) {
+			result.mesh->add_surface_from_arrays(part_mesh->surface_get_primitive_type(s), part_mesh->surface_get_arrays(s));
+			result.materials.push_back(part_materials[s]);
 		}
 	}
 
+	// -- Per-frame data + standalone per-geometry meshes --------------------
+	// Additive: existing consumers (MapBuilder, GTAModelInstance) only ever
+	// read result.mesh/result.materials above, which are unchanged. This is
+	// only read by GTAVehicleInstance, which needs individual named parts
+	// (wheels, doors, ...) instead of one merged blob.
+	result.frames.resize(parser.frames.size());
+	for (int i = 0; i < parser.frames.size(); i++) {
+		DffFrame frame;
+		frame.name = parser.frames[i].name;
+		frame.position = parser.frames[i].position;
+		frame.parent_index = parser.frames[i].parent_index;
+		frame.geometry_index = parser.frames[i].geometry_index;
+		result.frames.set(i, frame);
+	}
+
+	result.geometry_meshes.resize(parser.geometries.size());
+	result.geometry_materials.resize(parser.geometries.size());
+	for (int g = 0; g < parser.geometries.size(); g++) {
+		Ref<ArrayMesh> geom_mesh;
+		Vector<DffMaterial> geom_materials;
+		build_geometry_mesh(parser.geometries[g], geom_mesh, geom_materials);
+		result.geometry_meshes.set(g, geom_mesh);
+		result.geometry_materials.set(g, geom_materials);
+	}
+
 	return result;
+}
+
+Vector3 DffParser::accumulate_frame_position(const Vector<DffFrame> &p_frames, int32_t p_index) {
+	Vector3 pos;
+	int32_t i = p_index;
+	int guard = 0; // Defensive: bail out instead of looping forever on a malformed/cyclic parent chain.
+	while (i >= 0 && i < p_frames.size() && guard++ < 64) {
+		pos += p_frames[i].position;
+		i = p_frames[i].parent_index;
+	}
+	return pos;
 }

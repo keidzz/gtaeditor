@@ -23,12 +23,35 @@ void MapMaterial::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transp
 }
 
 Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const String &p_txd_name,
-		uint32_t p_flags, TextureCollection &textures) {
+		uint32_t p_flags, TextureCollection &textures, const VehiclePaintColors *p_paint) {
 	Ref<StandardMaterial3D> mat;
 	mat.instantiate();
 
-	// Set base color from DFF material.
-	mat->set_albedo(p_mat.color);
+	// Set base color from DFF material, substituting GTA's reserved
+	// "paintable" placeholder colors with the vehicle's actual paint when
+	// p_paint is provided. See gtamods.com/wiki/Carcols.dat — vehicle
+	// materials meant to be recolored at runtime ship with one of these
+	// four fixed colors baked in (otherwise they render as literal
+	// green/magenta/cyan/magenta, which is what raw DFF colors look like
+	// on an unpainted vehicle).
+	Color base_color = p_mat.color;
+	if (p_paint != nullptr) {
+		static const Color kPaintSlots[4] = {
+			Color(60 / 255.0f, 255 / 255.0f, 0 / 255.0f), // primary   (#3cff00)
+			Color(255 / 255.0f, 0 / 255.0f, 175 / 255.0f), // secondary (#ff00af)
+			Color(0 / 255.0f, 255 / 255.0f, 255 / 255.0f), // tertiary  (#00ffff)
+			Color(255 / 255.0f, 0 / 255.0f, 255 / 255.0f), // quaternary(#ff00ff)
+		};
+		const Color kPaintOverrides[4] = { p_paint->primary, p_paint->secondary, p_paint->tertiary, p_paint->quaternary };
+		for (int i = 0; i < 4; i++) {
+			if (base_color.is_equal_approx(kPaintSlots[i])) {
+				base_color = kPaintOverrides[i];
+				base_color.a = p_mat.color.a;
+				break;
+			}
+		}
+	}
+	mat->set_albedo(base_color);
 
 	// Culling.
 	if (p_flags & FLAG_FACE_CULLING_OFF) {

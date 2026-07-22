@@ -7,6 +7,7 @@
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 #include "classes/gta_model_instance.h"
+#include "classes/gta_vehicle_instance.h"
 using namespace godot;
 
 void initialize_gdextension_types(ModuleInitializationLevel p_level) {
@@ -17,6 +18,7 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<MapBuilder>();
 	ClassDB::register_class<MapExporter>();
 	ClassDB::register_class<GTAModelInstance>();
+	ClassDB::register_class<GTAVehicleInstance>();
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {

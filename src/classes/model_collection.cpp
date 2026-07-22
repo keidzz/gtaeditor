@@ -84,6 +84,45 @@ Vector<Dff2dfxLight> ModelCollection::get_2dfx_lights(const String &p_name) {
 	return entry.result.lights;
 }
 
+Vector<DffFrame> ModelCollection::get_frames(const String &p_name) {
+	String key = p_name.to_lower();
+	if (!dff_entries.has(key)) {
+		return Vector<DffFrame>();
+	}
+
+	DffEntry &entry = dff_entries[key];
+	ensure_loaded(entry);
+	return entry.result.frames;
+}
+
+Ref<ArrayMesh> ModelCollection::get_geometry_mesh(const String &p_name, int32_t p_geometry_index) {
+	String key = p_name.to_lower();
+	if (!dff_entries.has(key)) {
+		return Ref<ArrayMesh>();
+	}
+
+	DffEntry &entry = dff_entries[key];
+	ensure_loaded(entry);
+	if (p_geometry_index < 0 || p_geometry_index >= entry.result.geometry_meshes.size()) {
+		return Ref<ArrayMesh>();
+	}
+	return entry.result.geometry_meshes[p_geometry_index];
+}
+
+Vector<DffMaterial> ModelCollection::get_geometry_materials(const String &p_name, int32_t p_geometry_index) {
+	String key = p_name.to_lower();
+	if (!dff_entries.has(key)) {
+		return Vector<DffMaterial>();
+	}
+
+	DffEntry &entry = dff_entries[key];
+	ensure_loaded(entry);
+	if (p_geometry_index < 0 || p_geometry_index >= entry.result.geometry_materials.size()) {
+		return Vector<DffMaterial>();
+	}
+	return entry.result.geometry_materials[p_geometry_index];
+}
+
 int ModelCollection::get_model_count() const {
 	return dff_entries.size();
 }

@@ -40,6 +40,17 @@ public:
 
 	Vector<Dff2dfxLight> get_2dfx_lights(const String &p_name);
 
+	// -- Added for GTAVehicleInstance: per-named-part access -----------------
+	// Every frame in the model's clump (chassis_dummy, wheel_lf_dummy, ...),
+	// with its geometry_index and its position relative to its parent frame.
+	Vector<DffFrame> get_frames(const String &p_name);
+
+	// The standalone mesh/materials for one geometry entry (as referenced by
+	// a DffFrame::geometry_index from get_frames()). Distinct from get_mesh(),
+	// which returns the whole clump merged into a single mesh.
+	Ref<ArrayMesh> get_geometry_mesh(const String &p_name, int32_t p_geometry_index);
+	Vector<DffMaterial> get_geometry_materials(const String &p_name, int32_t p_geometry_index);
+
 
 	// Stats.
 	int get_model_count() const;

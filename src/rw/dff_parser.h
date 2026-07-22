@@ -28,6 +28,20 @@ struct DffMaterial {
 	bool textured = false;
 };
 
+// =============================================================================
+// DFF Frame — one node in the clump's frame hierarchy (chassis_dummy,
+// wheel_lf_dummy, door_lf_dummy, ...). Exposed so callers that need
+// individual named parts (vehicles) can position/filter them themselves,
+// instead of only getting the single merged mesh used for map props.
+// =============================================================================
+
+struct DffFrame {
+	String name;
+	Vector3 position; // GTA→Godot converted, relative to parent_index (translation only, see accumulate_frame_position()).
+	int32_t parent_index = -1;
+	int32_t geometry_index = -1; // -1 if this frame has no atomic attached.
+};
+
 struct Dff2dfxLight {
 	Vector3 local_offset;
 	uint8_t red = 255;
@@ -58,6 +72,13 @@ struct DffResult {
 	Ref<ConcavePolygonShape3D> col_shape;
 	Vector<DffMaterial> materials; // One per mesh surface
 	Vector<Dff2dfxLight> lights;
+
+	// -- Added for GTAVehicleInstance (and any future multi-part consumer) --
+	// The merged `mesh` above stays byte-for-byte identical to before; these
+	// are purely additive and unused by MapBuilder/GTAModelInstance.
+	Vector<DffFrame> frames; // Every frame in the clump, in file order.
+	Vector<Ref<ArrayMesh>> geometry_meshes; // One mesh per raw geometry entry, indexed the same way frames[i].geometry_index is.
+	Vector<Vector<DffMaterial>> geometry_materials; // Parallel to geometry_meshes; one DffMaterial per surface.
 };
 
 // =============================================================================
@@ -80,6 +101,15 @@ class DffParser {
 public:
 	// Parse a DFF file from raw bytes. Returns mesh + material info.
 	static DffResult parse(const PackedByteArray &p_data);
+
+	// Sums local positions from p_index up through its parent chain, giving
+	// that frame's position relative to the clump root. Translation-only —
+	// does not account for a parent frame's rotation matrix (currently
+	// discarded during parsing; see the "skip(36)" comment in
+	// parse_frames_list() in dff_parser.cpp). Fine for standard SA vehicle
+	// wheel/panel dummies, which are conventionally unrotated relative to
+	// chassis_dummy.
+	static Vector3 accumulate_frame_position(const Vector<DffFrame> &p_frames, int32_t p_index);
 };
 
 #endif // DFF_PARSER_H

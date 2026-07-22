@@ -16,6 +16,11 @@ using namespace godot;
 //   OBJS: ID, ModelName, TextureName, ObjectCount?, DrawDist, Flags
 //   TOBJ: Same as OBJS + TimeOn, TimeOff
 //   ANIM: ID, ModelName, TextureName, AnimName, DrawDist, Flags
+//   CARS: ID, ModelName, TextureName, ... (vehicle-type-specific fields).
+//         Only ID/ModelName/TextureName are parsed — enough for
+//         GTAVehicleInstance/GTAModelInstance's numeric model_id lookups to
+//         resolve vehicles; draw_distance/flags are set to a flat fallback
+//         since CARS doesn't define per-vehicle equivalents of those.
 //   TXDP: TextureName, TextureParentName
 //   2DFX: Effect definitions attached to object definitions
 //

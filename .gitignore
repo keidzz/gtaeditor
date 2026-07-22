@@ -2,6 +2,7 @@
 project/gta/*
 !project/gta/.gdignore
 !project/gta/README.md
+srcfiles/
 
 project/addons/
 
