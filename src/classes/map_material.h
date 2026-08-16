@@ -17,10 +17,15 @@ namespace godot {
 // =============================================================================
 
 struct VehiclePaintColors {
-	Color primary = Color(0.15f, 0.15f, 0.15f);
-	Color secondary = Color(0.15f, 0.15f, 0.15f);
-	Color tertiary = Color(0.15f, 0.15f, 0.15f);
-	Color quaternary = Color(0.15f, 0.15f, 0.15f);
+	// Not black by default — flat near-black on every slot made vehicles
+	// hard to even look at in the editor before you'd manually set colors.
+	// GTAVehicleInstance additionally exposes a `color_preset` property with
+	// a small built-in palette (see kColorPresets in gta_vehicle_instance.cpp)
+	// for quickly picking something more deliberate than this fallback.
+	Color primary = Color(0.55f, 0.05f, 0.05f); // muted red
+	Color secondary = Color(0.05f, 0.05f, 0.06f); // near-black
+	Color tertiary = Color(0.05f, 0.05f, 0.06f);
+	Color quaternary = Color(0.05f, 0.05f, 0.06f);
 };
 
 // =============================================================================

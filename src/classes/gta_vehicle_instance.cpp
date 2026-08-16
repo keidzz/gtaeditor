@@ -261,6 +261,47 @@ void GTAVehicleInstance::set_quaternary_color(const Color &p_color) {
 }
 Color GTAVehicleInstance::get_quaternary_color() const { return paint.quaternary; }
 
+// Small built-in palette of generic, realistic car paint colors — not an
+// attempt to reproduce GTA:SA's actual carcols.dat byte values (which this
+// project doesn't ship or have verified access to), just tasteful common
+// car colors so a freshly-placed GTAVehicleInstance doesn't default to flat
+// black. Index 0 (Custom) is a no-op — it leaves whatever colors are
+// currently set alone, rather than overwriting a color you already picked.
+struct ColorPreset {
+	const char *name;
+	Color primary;
+	Color secondary;
+};
+static const ColorPreset kColorPresets[] = {
+	{ "Custom", Color(), Color() },
+	{ "Black", Color(0.03f, 0.03f, 0.03f), Color(0.03f, 0.03f, 0.03f) },
+	{ "White", Color(0.90f, 0.90f, 0.90f), Color(0.90f, 0.90f, 0.90f) },
+	{ "Red", Color(0.60f, 0.05f, 0.05f), Color(0.15f, 0.02f, 0.02f) },
+	{ "Blue", Color(0.05f, 0.15f, 0.55f), Color(0.03f, 0.05f, 0.15f) },
+	{ "Silver", Color(0.65f, 0.65f, 0.68f), Color(0.40f, 0.40f, 0.42f) },
+	{ "Yellow", Color(0.85f, 0.70f, 0.05f), Color(0.15f, 0.12f, 0.02f) },
+	{ "Green", Color(0.05f, 0.35f, 0.10f), Color(0.02f, 0.10f, 0.03f) },
+	{ "Orange", Color(0.80f, 0.35f, 0.05f), Color(0.20f, 0.08f, 0.02f) },
+	{ "Purple", Color(0.35f, 0.10f, 0.45f), Color(0.10f, 0.03f, 0.15f) },
+	{ "Pink", Color(0.85f, 0.40f, 0.55f), Color(0.30f, 0.10f, 0.15f) },
+};
+static const int kColorPresetCount = sizeof(kColorPresets) / sizeof(kColorPresets[0]);
+
+void GTAVehicleInstance::set_color_preset(int p_preset) {
+	color_preset = CLAMP(p_preset, 0, kColorPresetCount - 1);
+	if (color_preset != 0) { // 0 == Custom: don't touch existing colors.
+		const ColorPreset &preset = kColorPresets[color_preset];
+		paint.primary = preset.primary;
+		paint.secondary = preset.secondary;
+		paint.tertiary = preset.secondary;
+		paint.quaternary = preset.secondary;
+	}
+	if (is_inside_tree()) {
+		refresh_vehicle();
+	}
+}
+int GTAVehicleInstance::get_color_preset() const { return color_preset; }
+
 // =============================================================================
 // Binding
 // =============================================================================
@@ -301,6 +342,12 @@ void GTAVehicleInstance::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_quaternary_color", "color"), &GTAVehicleInstance::set_quaternary_color);
 	ClassDB::bind_method(D_METHOD("get_quaternary_color"), &GTAVehicleInstance::get_quaternary_color);
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "quaternary_color"), "set_quaternary_color", "get_quaternary_color");
+
+	ClassDB::bind_method(D_METHOD("set_color_preset", "preset"), &GTAVehicleInstance::set_color_preset);
+	ClassDB::bind_method(D_METHOD("get_color_preset"), &GTAVehicleInstance::get_color_preset);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_preset", PROPERTY_HINT_ENUM,
+						 "Custom,Black,White,Red,Blue,Silver,Yellow,Green,Orange,Purple,Pink"),
+			"set_color_preset", "get_color_preset");
 
 	ClassDB::bind_method(D_METHOD("refresh_vehicle"), &GTAVehicleInstance::refresh_vehicle);
 }

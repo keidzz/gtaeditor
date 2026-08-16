@@ -62,12 +62,12 @@ shader_parameter/atm_darkness = 0.5
 shader_parameter/atm_sun_intensity = 18.0
 shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
 shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
-shader_parameter/atm_night_tint = Color(0, 0, 0, 0)
+shader_parameter/atm_night_tint = Color(0.168627, 0.2, 0.25098, 1)
 shader_parameter/atm_level_params = Vector3(1, 0, 0)
 shader_parameter/atm_thickness = 0.7
 shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
 shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
-shader_parameter/sun_light_color = Color(0.99821943, 0.9575335, 0.93714595, 1)
+shader_parameter/sun_light_color = Color(0.98, 0.523, 0.294, 1)
 shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
 shader_parameter/sun_disk_intensity = 30.0
 shader_parameter/sun_disk_size = 0.02
@@ -89,7 +89,7 @@ shader_parameter/starmap_flip_u = false
 shader_parameter/starmap_flip_v = false
 shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
 shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -12.094785114842443
+shader_parameter/star_rotation = -8.09666383385321
 shader_parameter/star_tilt = -1.2915436464758039
 shader_parameter/star_field_color = Color(1, 1, 1, 1)
 shader_parameter/star_field_texture = ExtResource("8_c70he")
@@ -105,8 +105,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.6110618, 0.11850627)
-shader_parameter/cirrus_position2 = Vector2(0.6110618, 0.11850627)
+shader_parameter/cirrus_position1 = Vector2(0.023763122, 0.9268458)
+shader_parameter/cirrus_position2 = Vector2(0.023763122, 0.9268458)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -116,7 +116,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(3.0557425, -9.396416)
+shader_parameter/cumulus_position = Vector2(0.11881373, -0.36567155)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -126,7 +126,7 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(0.87626326, 0.4631675, 0.13281116, -0.19851473, 0.59819084, -0.7763761, -0.43903852, 0.65394473, 0.6161182)
+shader_parameter/moon_matrix = Basis(-0.98118293, 0.1856005, 0.053220082, -0.085613064, -0.17115037, -0.98151815, -0.17306162, -0.9676053, 0.1838197)
 
 [sub_resource type="Sky" id="Sky_mw3q6"]
 sky_material = SubResource("ShaderMaterial_mo32q")
@@ -135,7 +135,8 @@ sky_material = SubResource("ShaderMaterial_mo32q")
 background_mode = 2
 sky = SubResource("Sky_mw3q6")
 ambient_light_source = 3
-ambient_light_color = Color(0.85396254, 0.8191563, 0.8017151, 1)
+ambient_light_color = Color(0.23515604, 0.27890667, 0.35, 1)
+ambient_light_sky_contribution = 0.7
 reflected_light_source = 2
 tonemap_mode = 3
 sdfgi_use_occlusion = true
@@ -155,7 +156,6 @@ use_collision = true
 streaming_distance = 1000.0
 draw_distance_multiplier = 2.0
 load_interiors = true
-load_map_in_editor = true
 
 [node name="ExportNavigation" type="Control" parent="." unique_id=1855623042]
 layout_mode = 3
@@ -354,10 +354,11 @@ spot_angle = 50.0
 
 [node name="GTAVehicleInstance" type="GTAVehicleInstance" parent="Car" unique_id=1153224885]
 model_name = "savanna"
-primary_color = Color(0.0820637, 0.16155216, 0.1944899, 1)
-secondary_color = Color(0.06250825, 0.17175794, 0.1497131, 1)
-tertiary_color = Color(0.10735778, 0.16413033, 0.13576263, 1)
-quaternary_color = Color(0.14110985, 0.15763113, 0.10008279, 1)
+primary_color = Color(0.05, 0.35, 0.1, 1)
+secondary_color = Color(0.02, 0.1, 0.03, 1)
+tertiary_color = Color(0.02, 0.1, 0.03, 1)
+quaternary_color = Color(0.02, 0.1, 0.03, 1)
+color_preset = 7
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.39331055, 0.08474541, 0.52282715)
 
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
@@ -365,33 +366,33 @@ environment = SubResource("Environment_6k6j1")
 camera_attributes = SubResource("CameraAttributesPractical_m335s")
 script = ExtResource("10_6k6j1")
 editor_time_enabled = false
-current_time = 15.23
+current_time = 0.0
 wind_direction = 0.3141592653589793
 
 [node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1207315250]
-transform = Transform3D(0.6021978, 0.36363572, -0.7107228, 0, 0.89024305, 0.45548582, 0.79834694, -0.27429256, 0.5361024, -0.7107228, 0.45548582, 0.5361024)
-light_color = Color(0.99821943, 0.9575335, 0.93714595, 1)
-shadow_enabled = true
+transform = Transform3D(0.96259433, 0.26876304, 0.034329332, 0, 0.12670144, -0.9919409, -0.27094662, 0.9548367, 0.12196211, 0.034329332, -0.9919409, 0.12196211)
+light_color = Color(0.98, 0.523, 0.294, 1)
+light_energy = 0.0
 directional_shadow_max_distance = 250.0
 
 [node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1257949493]
-transform = Transform3D(0, -0.8984684, -0.43903846, 0.6857428, -0.3195515, 0.65394473, -0.727844, -0.30106747, 0.61611813, -0.43903846, 0.65394473, 0.61611813)
+transform = Transform3D(0, -0.984911, -0.17306164, 0.18663582, 0.1700208, -0.9676053, 0.98242915, -0.0322995, 0.18381968, -0.17306164, -0.9676053, 0.18381968)
 light_color = Color(0.572549, 0.776471, 0.956863, 1)
 light_energy = 0.0
 
 [node name="SkyDome" type="Node" parent="Sky3D" unique_id=1011329888]
 script = ExtResource("11_m335s")
-sun_azimuth = -4.066138
-sun_altitude = -1.0978785
-moon_azimuth = -3.7607172
-moon_altitude = -0.8580094
+sun_azimuth = -2.8672163
+sun_altitude = -3.0145497
+moon_azimuth = -3.8968554
+moon_altitude = -2.8863628
 wind_direction = 0.3141592653589793
 
 [node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=184294769]
 script = ExtResource("12_sq6bu")
 editor_time_enabled = false
 dome_path = NodePath("../SkyDome")
-current_time = 15.23
+current_time = 0.0
 
 [node name="Lights" type="Node3D" parent="." unique_id=450166390]
 visible = false

@@ -73,6 +73,14 @@ public:
 	void set_quaternary_color(const Color &p_color);
 	Color get_quaternary_color() const;
 
+	// Quick-pick palette (Custom, Black, White, Red, ...). Applying a preset
+	// (anything other than Custom) overwrites primary_color/secondary_color
+	// (and tertiary/quaternary, matched to secondary) with that preset's
+	// colors — a faster starting point than typing RGB values by hand. Picking
+	// Custom just leaves whatever colors are currently set alone.
+	void set_color_preset(int p_preset);
+	int get_color_preset() const;
+
 	// Re-resolves and (re)builds all child parts from the current
 	// model_id/model_name/gta_path/paint colors.
 	void refresh_vehicle();
@@ -88,6 +96,7 @@ private:
 	bool use_streaming = false;
 
 	VehiclePaintColors paint;
+	int color_preset = 0; // 0 = Custom
 
 	// Every part spawned by the last refresh_vehicle() call, so it can be
 	// torn down cleanly before rebuilding (model changed, paint changed, ...).

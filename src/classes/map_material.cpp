@@ -28,12 +28,18 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 	mat.instantiate();
 
 	// Set base color from DFF material, substituting GTA's reserved
-	// "paintable" placeholder colors with the vehicle's actual paint when
-	// p_paint is provided. See gtamods.com/wiki/Carcols.dat — vehicle
-	// materials meant to be recolored at runtime ship with one of these
-	// four fixed colors baked in (otherwise they render as literal
-	// green/magenta/cyan/magenta, which is what raw DFF colors look like
-	// on an unpainted vehicle).
+	// "special purpose" placeholder colors when this is a vehicle part
+	// (p_paint != nullptr, only ever passed by GTAVehicleInstance):
+	//  - 4 paintable-surface colors, swapped for this instance's actual
+	//    paint (see gtamods.com/wiki/Carcols.dat).
+	//  - a handful of reserved vehicle-light colors (headlight/taillight/
+	//    indicator/reverse/fog materials, plus day/night visibility
+	//    markers) that the game recognizes by these exact values and
+	//    replaces with an actual glow/corona effect at runtime. We don't
+	//    implement that runtime behavior (day/night state, corona
+	//    sprites, brake/indicator state), so these are swapped for a
+	//    plausible static lens color instead of rendering the literal
+	//    marker color, which otherwise shows up as jarring green/cyan/blue.
 	Color base_color = p_mat.color;
 	if (p_paint != nullptr) {
 		static const Color kPaintSlots[4] = {
@@ -43,12 +49,61 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 			Color(255 / 255.0f, 0 / 255.0f, 255 / 255.0f), // quaternary(#ff00ff)
 		};
 		const Color kPaintOverrides[4] = { p_paint->primary, p_paint->secondary, p_paint->tertiary, p_paint->quaternary };
+
+		bool matched = false;
 		for (int i = 0; i < 4; i++) {
 			if (base_color.is_equal_approx(kPaintSlots[i])) {
 				base_color = kPaintOverrides[i];
 				base_color.a = p_mat.color.a;
+				matched = true;
 				break;
 			}
+		}
+
+		if (!matched) {
+			// Reserved light-marker colors -> plausible static lens color.
+			// Approximate values (community-documented, may vary slightly
+			// from vanilla byte-for-byte) — close enough to catch the
+			// intent even if a couple don't match exactly on your files.
+			struct LightSlot {
+				Color marker;
+				Color replacement;
+			};
+			static const LightSlot kLightSlots[] = {
+				{ Color(184 / 255.0f, 255 / 255.0f, 0), Color(0.6f, 0.05f, 0.05f) }, // brake (left)  -> red lens
+				{ Color(255 / 255.0f, 59 / 255.0f, 0), Color(0.6f, 0.05f, 0.05f) }, // brake (right) -> red lens
+				{ Color(255 / 255.0f, 173 / 255.0f, 0), Color(0.85f, 0.85f, 0.8f) }, // reverse       -> clear/white lens
+				{ Color(0, 255 / 255.0f, 198 / 255.0f), Color(0.85f, 0.85f, 0.8f) }, // reverse       -> clear/white lens
+				{ Color(183 / 255.0f, 255 / 255.0f, 0), Color(0.7f, 0.35f, 0.05f) }, // indicator     -> amber lens
+				{ Color(255 / 255.0f, 58 / 255.0f, 0), Color(0.7f, 0.35f, 0.05f) }, // indicator     -> amber lens
+				{ Color(0, 16 / 255.0f, 1.0f), Color(0.9f, 0.9f, 0.85f) }, // night-only marker    -> neutral (headlight-ish)
+				{ Color(0, 17 / 255.0f, 1.0f), Color(0.9f, 0.9f, 0.85f) }, // all-day marker       -> neutral
+				{ Color(0, 18 / 255.0f, 1.0f), Color(0.9f, 0.9f, 0.85f) }, // day-only marker      -> neutral
+			};
+			for (const LightSlot &slot : kLightSlots) {
+				if (base_color.is_equal_approx(slot.marker)) {
+					base_color = slot.replacement;
+					base_color.a = p_mat.color.a;
+					matched = true;
+					break;
+				}
+			}
+		}
+
+		// Glass fallback: GTA's vehicle windows look dark/tinted in-game
+		// via an environment-map/reflection shader trick at render time —
+		// the material's own raw diffuse color is often a neutral light
+		// grey/white, meant only as a faint base tint under that
+		// reflection. Since we don't replicate that shader, applying the
+		// raw color literally produces flat, light "white glass" instead
+		// of the tinted look players expect. Any remaining untextured,
+		// already-translucent vehicle material (i.e. not paint, not a
+		// light lens — glass is basically what's left) gets a plausible
+		// dark tinted-glass color instead.
+		if (!matched && !p_mat.textured && p_mat.color.a < 0.95f) {
+			base_color = Color(0.05f, 0.08f, 0.1f, MIN(p_mat.color.a, 0.45f));
+			mat->set_roughness(0.05f);
+			mat->set_metallic(0.3f);
 		}
 	}
 	mat->set_albedo(base_color);
@@ -62,12 +117,14 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 
 	// Apply texture if the material is textured.
 	Image::AlphaMode alpha_mode = Image::ALPHA_NONE;
+	bool has_texture = false;
 
 	if (p_mat.textured && !p_mat.texture_name.is_empty()) {
 		Ref<ImageTexture> tex;
 		bool has_alpha = false;
 		if (textures.get_texture(p_txd_name, p_mat.texture_name, tex, has_alpha)) {
 			mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
+			has_texture = true;
 
 			if (has_alpha) {
 				alpha_mode = Image::ALPHA_BIT;
@@ -76,7 +133,16 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 	}
 
 	// Apply transparency using proper alpha detection.
-	bool is_transparent = (p_flags & FLAG_DRAW_LAST) || (p_mat.color.a < 1.0f);
+	// The material's own diffuse-color alpha only reliably indicates real
+	// transparency for UNTEXTURED materials (solid-color glass, light
+	// lenses, etc). Some GTA SA objects carry a color alpha slightly below
+	// 255 on an otherwise fully opaque, textured material — purely an
+	// artifact of authoring, not an intent to make it see-through — so
+	// trusting it there was making some opaque textured surfaces render
+	// as translucent. The texture's own alpha channel (already captured in
+	// alpha_mode above) is the authoritative source of transparency once a
+	// texture is actually applied.
+	bool is_transparent = (p_flags & FLAG_DRAW_LAST) || (!has_texture && p_mat.color.a < 1.0f);
 	bool is_additive = (p_flags & FLAG_ALPHA_TRANSPARENCY);
 	apply_transparency(mat, is_transparent, alpha_mode, is_additive);
 
