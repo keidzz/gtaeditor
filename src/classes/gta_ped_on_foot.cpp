@@ -200,14 +200,48 @@
         gta-reversed (plugin::CallMethod stub), so there is no sourced
         damage formula to port. Deferred until the ped has a health system.
     --------------------------------------------------------------------------
+
+    --------------------------------------------------------------------------
+    [PLACEHOLDER] Step-up height and mechanics
+    --------------------------------------------------------------------------
+    Real GTA peds walk up curbs and stairs without jumping. The original
+    handles that inside the collision system (per-contact step processing on
+    the CColPoint/RWC-triangle data), not as a ped tunable -- there is no
+    step-height constant anywhere in the tasks code I've read, so there is no
+    sourced value to copy. The mechanics here are a Godot-native equivalent:
+    CharacterBody3D treats a vertical riser as a wall, so each grounded frame
+    with horizontal velocity we probe twice with the ped's own collision
+    shape (transform = the CollisionShape3D's global transform with rotation
+    zeroed -- safe, the capsule is rotation-invariant and the ped only ever
+    rotates around Y):
+
+      1) Foot-level probe (origin +0.04): intersect_shape must hit a surface
+         steeper than ~45 degrees (hit normal.y < 0.7) blocking the way. The
+         0.04 lift keeps flat ground and gentle slopes from registering.
+      2) Raised probe (origin +0.04 + step_raise, step_raise = step_height
+         + 0.06): cast_motion of the same shape swept along the frame's
+         horizontal motion (+0.06 margin) must be clear (safe fraction
+         > 0.999). A wall taller than step_height fails this and still just
+         blocks.
+
+    If both hold, the body is lifted by step_raise and floor snapping (set to
+    step_raise for that one move_and_slide) drops it onto the tread; the
+    snap length is restored immediately after. The raised probe covers the
+    raise teleport's destination, so no intersection check on the lift
+    itself is needed.
+    -> step_height = 0.3f (PLACEHOLDER: tune to the game's curb/riser size)
+    --------------------------------------------------------------------------
 */
 
 #include "gta_ped_on_foot.h"
 
+#include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/physics_direct_space_state3d.hpp>
 #include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
+#include <godot_cpp/classes/physics_shape_query_parameters3d.hpp>
+#include <godot_cpp/classes/shape3d.hpp>
 #include <godot_cpp/classes/world3d.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -248,6 +282,10 @@ void GTAPedOnFoot::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_turn_rate", "value"), &GTAPedOnFoot::set_turn_rate);
 	ClassDB::bind_method(D_METHOD("get_turn_rate"), &GTAPedOnFoot::get_turn_rate);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "turn_rate"), "set_turn_rate", "get_turn_rate");
+
+	ClassDB::bind_method(D_METHOD("set_step_height", "value"), &GTAPedOnFoot::set_step_height);
+	ClassDB::bind_method(D_METHOD("get_step_height"), &GTAPedOnFoot::get_step_height);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "step_height"), "set_step_height", "get_step_height");
 
 	ClassDB::bind_method(D_METHOD("set_sprint_is_toggle", "value"), &GTAPedOnFoot::set_sprint_is_toggle);
 	ClassDB::bind_method(D_METHOD("get_sprint_is_toggle"), &GTAPedOnFoot::get_sprint_is_toggle);
@@ -313,6 +351,7 @@ void GTAPedOnFoot::_ready() {
 	if (!camera_path.is_empty()) {
 		camera_node = Object::cast_to<Node3D>(get_node_or_null(camera_path));
 	}
+	_cache_collision_shape();
 }
 
 // Reads WASD-equivalent actions as raw digital axes, deliberately NOT normalized
@@ -421,6 +460,16 @@ real_t GTAPedOnFoot::_current_target_speed() const {
 
 // [SOURCED constants, substituted signal — see header comment] jump impulse.
 void GTAPedOnFoot::_apply_jump() {
+	// [FIX] Disable floor snapping for the airtime. At 120 physics ticks the
+	// launch rises only ~6.07/120 = 0.05 units on the first tick, which is
+	// inside the default floor_snap_length (0.1) — Godot would snap the body
+	// back to the floor and the same-frame "now_on_floor && is_in_the_air"
+	// landing check would cancel the jump and zero the horizontal hop speed
+	// below (the real game has no floor snapping; its InAir task only ends on
+	// a descending touchdown). Restored on landing in _physics_process.
+	floor_snap_length_restore = get_floor_snap_length();
+	set_floor_snap_length(0.0f);
+
 	Vector3 vel = get_velocity();
 	vel.y = jump_vertical_speed;
 
@@ -579,11 +628,42 @@ void GTAPedOnFoot::_physics_process(double delta) {
 		}
 	}
 
+	// --- Step-up: walk up curbs and stair risers without jumping ---
+	// [PLACEHOLDER mechanics, see provenance block] CharacterBody3D treats a
+	// riser as a wall, so when grounded, moving, and blocked at foot level by
+	// a surface steeper than ~45 degrees with the raised path clear, lift the
+	// body and let floor snapping land it on the tread.
+	bool did_step = false;
+	if (was_on_floor && !is_in_the_air && step_height > 0.0f) {
+		Vector3 step_vel = vel;
+		step_vel.y = 0.0f;
+		real_t hlen = step_vel.length();
+		if (hlen > 0.0001f) {
+			real_t step_dist = hlen * (real_t)delta + 0.06f;
+			did_step = _try_step_up(step_vel / hlen, step_dist);
+		}
+	}
+
 	move_and_slide();
 
+	// Step-up temporarily raised floor snapping so the body drops onto the
+	// tread; restore the length the jump/landing logic expects. Restoring
+	// after the move is safe: a step can only happen grounded, so the
+	// landing branch below never runs on the same frame.
+	if (did_step) {
+		set_floor_snap_length(floor_snap_length_restore);
+	}
+
 	bool now_on_floor = is_on_floor();
-	if (now_on_floor && is_in_the_air) {
+	// [FIX] Only a DESCENDING touchdown ends the airtime. In the game,
+	// CTaskSimpleInAir only hands off to the land task once the ped actually
+	// touches ground while falling (it can't touch while still rising).
+	// Godot floor snapping is disabled during the jump (_apply_jump), so this
+	// also can't fire on the same frame as the launch anymore — the guard
+	// below keeps it that way even if a scene re-enables snapping.
+	if (now_on_floor && is_in_the_air && vel.y <= 0.0f) {
 		is_in_the_air = false;
+		set_floor_snap_length(floor_snap_length_restore);
 		if (fall_flail_active) {
 			// [SOURCED] TaskComplexInAirAndLand.cpp:60-66: a flail landing
 			// with min fall speed < -0.4F per frame (=-20 units/sec) becomes
@@ -653,6 +733,9 @@ real_t GTAPedOnFoot::get_sprint_speed() const { return sprint_speed; }
 void GTAPedOnFoot::set_turn_rate(real_t p_value) { turn_rate = p_value; }
 real_t GTAPedOnFoot::get_turn_rate() const { return turn_rate; }
 
+void GTAPedOnFoot::set_step_height(real_t p_value) { step_height = p_value; }
+real_t GTAPedOnFoot::get_step_height() const { return step_height; }
+
 void GTAPedOnFoot::set_sprint_is_toggle(bool p_value) { sprint_is_toggle = p_value; }
 bool GTAPedOnFoot::get_sprint_is_toggle() const { return sprint_is_toggle; }
 
@@ -704,6 +787,101 @@ bool GTAPedOnFoot::_is_free_fall() const {
 	exclude.append(get_rid());
 	params->set_exclude(exclude);
 	return space->intersect_ray(params).is_empty();
+}
+
+// Finds the first direct-child CollisionShape3D and caches it for the
+// step-up probes. Re-armed lazily in _try_step_up so a shape added after
+// _ready (e.g. by a GDScript) still works.
+void GTAPedOnFoot::_cache_collision_shape() {
+	collision_shape_node = nullptr;
+	for (int i = 0; i < get_child_count(); i++) {
+		CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(get_child(i));
+		if (cs != nullptr) {
+			collision_shape_node = cs;
+			break;
+		}
+	}
+}
+
+// [PLACEHOLDER mechanics, see provenance block] Two-probe step-up using the
+// ped's own collision shape. p_dir is the normalized horizontal motion
+// direction, p_dist the distance that motion covers this frame (+ margin).
+// Returns true and lifts the body if a riser (surface steeper than ~45 deg)
+// blocks at foot level while the same shape swept forward one step higher is
+// clear. The caller restores floor snapping after move_and_slide.
+bool GTAPedOnFoot::_try_step_up(const Vector3 &p_dir, real_t p_dist) {
+	if (collision_shape_node == nullptr) {
+		_cache_collision_shape();
+		if (collision_shape_node == nullptr) {
+			return false;
+		}
+	}
+	Ref<Shape3D> shape = collision_shape_node->get_shape();
+	if (shape.is_null()) {
+		return false;
+	}
+	PhysicsDirectSpaceState3D *space = get_world_3d()->get_direct_space_state();
+	if (space == nullptr) {
+		return false;
+	}
+
+	const real_t step_raise = step_height + 0.06f;
+	const Vector3 base = get_global_position();
+	// The capsule is rotation-invariant and the ped only rotates around Y,
+	// so the query can use the shape's transform with rotation zeroed; the
+	// local offset (capsule centered 0.9 above the body origin in map.tscn)
+	// is kept.
+	Transform3D shape_xform = collision_shape_node->get_global_transform();
+	shape_xform.basis = Basis();
+
+	Array exclude;
+	exclude.append(get_rid());
+
+	// Probe 1: something steeper than ~45 degrees (normal.y < 0.7) must be
+	// blocking at foot level. Raised 0.04 so flat ground and walkable slopes
+	// don't register as blockers.
+	Ref<PhysicsShapeQueryParameters3D> ground_params;
+	ground_params.instantiate();
+	ground_params->set_shape(shape);
+	ground_params->set_transform(shape_xform.translated(Vector3(0.0f, 0.04f, 0.0f)));
+	ground_params->set_collision_mask(get_collision_mask());
+	ground_params->set_exclude(exclude);
+	ground_params->set_collide_with_bodies(true);
+	ground_params->set_collide_with_areas(false);
+	bool riser_found = false;
+	for (const Variant &hit : space->intersect_shape(ground_params)) {
+		Dictionary hit_dict = hit;
+		Vector3 normal = hit_dict["normal"];
+		if (normal.y < 0.7f) {
+			riser_found = true;
+			break;
+		}
+	}
+	if (!riser_found) {
+		return false;
+	}
+
+	// Probe 2: the body swept forward from one step up must be clear. A wall
+	// taller than step_height overlaps here and still just blocks.
+	Ref<PhysicsShapeQueryParameters3D> raised_params;
+	raised_params.instantiate();
+	raised_params->set_shape(shape);
+	raised_params->set_transform(shape_xform.translated(Vector3(0.0f, 0.04f + step_raise, 0.0f)));
+	raised_params->set_motion(p_dir * p_dist);
+	raised_params->set_collision_mask(get_collision_mask());
+	raised_params->set_exclude(exclude);
+	raised_params->set_collide_with_bodies(true);
+	raised_params->set_collide_with_areas(false);
+	PackedFloat32Array cast_result = space->cast_motion(raised_params);
+	if (cast_result.is_empty() || cast_result[0] <= 0.999f) {
+		return false;
+	}
+
+	Vector3 raised_pos = get_global_position();
+	raised_pos.y += step_raise;
+	set_global_position(raised_pos);
+	set_floor_snap_length(step_raise);
+	return true;
 }
 
 // Called by the visual once the get-up (hard fall) or collapse (soft fall)

@@ -70,6 +70,14 @@ public:
 	void set_load_water(bool p_load);
 	bool get_load_water() const;
 
+	// GTA world geometry's baked lighting lives in the mesh vertex colors
+	// (the game renders world textures multiplied by vertex color, with its
+	// sun only lighting dynamic entities). When enabled, world/prop
+	// materials render those colors as albedo, restoring the game's baked
+	// shading instead of flat, uniformly-lit surfaces.
+	void set_use_vertex_colors(bool p_enabled);
+	bool get_use_vertex_colors() const;
+
 	void set_streetlight_energy(float p_energy);
 	float get_streetlight_energy() const;
 
@@ -112,6 +120,7 @@ private:
 	bool load_interiors = false;
 	bool load_collisions = true;
 	bool load_water = true;
+	bool use_vertex_colors = true;
 	float streetlight_energy = 1.0f;
 	bool streetlight_shadows = false;
 	String gta_path = "res://gta/";

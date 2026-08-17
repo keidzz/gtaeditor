@@ -147,7 +147,7 @@ void GTAVehicleInstance::refresh_vehicle() {
 
 		Vector<DffMaterial> part_materials = models->get_geometry_materials(target_name, frame.geometry_index);
 		for (int s = 0; s < part_mesh->get_surface_count() && s < part_materials.size(); s++) {
-			Ref<StandardMaterial3D> mat = MapMaterial::create(part_materials[s], txd_name, flags, *textures, &paint);
+			Ref<StandardMaterial3D> mat = MapMaterial::create(part_materials[s], txd_name, flags, *textures, &paint, false);
 			if (mat.is_valid()) {
 				part->set_surface_override_material(s, mat);
 			}

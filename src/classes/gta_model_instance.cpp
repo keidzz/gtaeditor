@@ -109,7 +109,7 @@ void GTAModelInstance::refresh_model() {
 	TextureCollection *textures = resources->get_textures();
 	Vector<DffMaterial> materials = models->get_materials(target_name);
 	for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
-		Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], txd_name, flags, *textures);
+		Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], txd_name, flags, *textures, nullptr, true);
 		if (mat.is_valid()) {
 			mesh_instance->set_surface_override_material(s, mat);
 		}

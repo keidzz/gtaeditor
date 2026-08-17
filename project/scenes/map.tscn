@@ -145,18 +145,16 @@ ambient_light_source = 3
 ambient_light_color = Color(0.67683256, 0.5410425, 0.47320297, 1)
 reflected_light_source = 2
 tonemap_mode = 3
-sdfgi_use_occlusion = true
-volumetric_fog_density = 0.0052
+tonemap_white = 4.0
+ssao_enabled = true
+ssao_intensity = 1.5
+volumetric_fog_density = 0.0015
 adjustment_enabled = true
 adjustment_brightness = 1.06
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_m335s"]
 
 [node name="Map" type="Node3D" unique_id=143196836]
-
-[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1417168564]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 26.316671, 1669.6431)
-use_collision = true
 
 [node name="MapBuilder" type="MapBuilder" parent="." unique_id=1997474710]
 streaming_distance = 1000.0

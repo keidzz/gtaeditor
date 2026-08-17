@@ -40,9 +40,13 @@ public:
 	// substituted with the matching color from p_paint instead of being
 	// rendered literally. Only ever passed by GTAVehicleInstance — regular
 	// map-prop rendering (MapBuilder, GTAModelInstance) is unaffected.
+	// p_use_vertex_colors: GTA world geometry's baked lighting lives in the
+	// mesh vertex colors, so world/props enable vertex_color_use_as_albedo;
+	// vehicles pass false (paint is tuned for real-time lighting).
 	static Ref<StandardMaterial3D> create(const DffMaterial &p_mat, const String &p_txd_name,
 										  uint32_t p_flags, TextureCollection &textures,
-										  const VehiclePaintColors *p_paint = nullptr);
+										  const VehiclePaintColors *p_paint = nullptr,
+										  bool p_use_vertex_colors = true);
 
 	// Apply transparency settings based on alpha detection.
 	static void apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent,

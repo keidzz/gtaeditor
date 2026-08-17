@@ -23,9 +23,21 @@ void MapMaterial::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transp
 }
 
 Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const String &p_txd_name,
-		uint32_t p_flags, TextureCollection &textures, const VehiclePaintColors *p_paint) {
+		uint32_t p_flags, TextureCollection &textures, const VehiclePaintColors *p_paint,
+		bool p_use_vertex_colors) {
 	Ref<StandardMaterial3D> mat;
 	mat.instantiate();
+
+	// GTA world/prop geometry carries its lighting baked into per-vertex
+	// colors (the game multiplies texture x vertex color; its directional
+	// sun only lights dynamic entities). Rendering those colors as albedo
+	// recovers the game's baked shading (AO, sun side, interior darkening)
+	// that otherwise reads as flat, uniformly-lit surfaces. Vehicles are
+	// excluded (p_use_vertex_colors = false): their paint is tuned for
+	// real-time lighting and most of their vertices are near-white anyway.
+	if (p_use_vertex_colors) {
+		mat->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+	}
 
 	// Set base color from DFF material, substituting GTA's reserved
 	// "special purpose" placeholder colors when this is a vehicle part

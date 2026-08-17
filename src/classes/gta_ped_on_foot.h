@@ -41,6 +41,8 @@
 
 namespace godot {
 
+class CollisionShape3D;
+
 class GTAPedOnFoot : public CharacterBody3D {
 	GDCLASS(GTAPedOnFoot, CharacterBody3D)
 
@@ -86,6 +88,8 @@ private:
 	real_t run_speed = 4.0f;
 	real_t sprint_speed = 7.0f;
 	real_t turn_rate = 12.0f; // rad/s
+	// Max curb/riser height the ped can walk up without jumping (see .cpp).
+	real_t step_height = 0.3f;
 
 	// ---- Behaviour toggles ----
 	bool sprint_is_toggle = false;
@@ -114,6 +118,13 @@ private:
 	bool fall_control_locked = false;        // input frozen while down/getting up
 	real_t fall_down_time_remaining = 0.0f;  // KO down-time countdown (seconds)
 
+	// Floor snap length to restore after a jump. Snapping is disabled for the
+	// duration of the airtime (see _apply_jump) so the launch isn't cancelled.
+	real_t floor_snap_length_restore = 0.1f;
+
+	// Cached CollisionShape3D child used by the step-up probes (see .cpp).
+	CollisionShape3D *collision_shape_node = nullptr;
+
 	// ---- Input action names (also added to project.godot's [input] map) ----
 	StringName action_move_forward = StringName("gta_move_forward");
 	StringName action_move_back = StringName("gta_move_back");
@@ -131,6 +142,8 @@ private:
 	void _apply_jump();
 	void _turn_towards(real_t target_angle, double delta);
 	bool _is_free_fall() const;
+	void _cache_collision_shape();
+	bool _try_step_up(const Vector3 &p_dir, real_t p_dist);
 
 protected:
 	static void _bind_methods();
@@ -163,6 +176,9 @@ public:
 
 	void set_turn_rate(real_t p_value);
 	real_t get_turn_rate() const;
+
+	void set_step_height(real_t p_value);
+	real_t get_step_height() const;
 
 	void set_sprint_is_toggle(bool p_value);
 	bool get_sprint_is_toggle() const;

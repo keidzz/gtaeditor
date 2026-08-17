@@ -457,7 +457,7 @@ Node3D *MapBuilder::spawn_placement(int32_t p_index) {
 
 		// Apply materials to each surface.
 		for (int s = 0; s < mesh->get_surface_count() && s < materials.size(); s++) {
-			Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, *textures);
+			Ref<StandardMaterial3D> mat = MapMaterial::create(materials[s], def.txd_name, def.flags, *textures, nullptr, use_vertex_colors);
 			if (mat.is_valid()) {
 				instance->set_surface_override_material(s, mat);
 			}
@@ -606,6 +606,9 @@ bool MapBuilder::get_load_collisions() const { return load_collisions; }
 void MapBuilder::set_load_water(bool p_load) { load_water = p_load; }
 bool MapBuilder::get_load_water() const { return load_water; }
 
+void MapBuilder::set_use_vertex_colors(bool p_enabled) { use_vertex_colors = p_enabled; }
+bool MapBuilder::get_use_vertex_colors() const { return use_vertex_colors; }
+
 void MapBuilder::set_gta_path(const String &p_path) { gta_path = p_path; }
 String MapBuilder::get_gta_path() const { return gta_path; }
 
@@ -669,6 +672,10 @@ void MapBuilder::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_load_water", "load"), &MapBuilder::set_load_water);
 	ClassDB::bind_method(D_METHOD("get_load_water"), &MapBuilder::get_load_water);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "load_water"), "set_load_water", "get_load_water");
+
+	ClassDB::bind_method(D_METHOD("set_use_vertex_colors", "enabled"), &MapBuilder::set_use_vertex_colors);
+	ClassDB::bind_method(D_METHOD("get_use_vertex_colors"), &MapBuilder::get_use_vertex_colors);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_vertex_colors"), "set_use_vertex_colors", "get_use_vertex_colors");
 
 	ClassDB::bind_method(D_METHOD("set_gta_path", "path"), &MapBuilder::set_gta_path);
 	ClassDB::bind_method(D_METHOD("get_gta_path"), &MapBuilder::get_gta_path);
