@@ -18,6 +18,13 @@
 [ext_resource type="Curve" uid="uid://cpjm6o4qmlec4" path="res://assets/curves/car_tire_back.tres" id="17_2cfcp"]
 [ext_resource type="PackedScene" uid="uid://vsibpbjhkj1b" path="res://blender/cars/lowpolybmw/body.glb" id="18_y2ir2"]
 [ext_resource type="Script" uid="uid://dlu7nesstlsye" path="res://scenes/followcamera.gd" id="19_5u2yt"]
+[ext_resource type="Script" uid="uid://c1vixs4f6wngr" path="res://scripts/cj_vehicle_controller.gd" id="20_ctrl"]
+[ext_resource type="Script" uid="uid://bfayfnv4ync50" path="res://scripts/camera_rig.gd" id="21_camrig"]
+[ext_resource type="Script" uid="uid://cgrsa0q31enbj" path="res://scripts/gta_character_visual.gd" id="22_vis"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ped"]
+radius = 0.4
+height = 1.8
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_30iet"]
 friction = 0.0
@@ -62,12 +69,12 @@ shader_parameter/atm_darkness = 0.5
 shader_parameter/atm_sun_intensity = 18.0
 shader_parameter/atm_day_tint = Color(0.807843, 0.909804, 1, 1)
 shader_parameter/atm_horizon_light_tint = Color(0.980392, 0.635294, 0.462745, 1)
-shader_parameter/atm_night_tint = Color(0.168627, 0.2, 0.25098, 1)
+shader_parameter/atm_night_tint = Color(0.00306783, 0.003638599, 0.0045660776, 0.018192995)
 shader_parameter/atm_level_params = Vector3(1, 0, 0)
 shader_parameter/atm_thickness = 0.7
 shader_parameter/atm_beta_ray = Vector3(5.804544e-06, 1.3562913e-05, 3.311258e-05)
 shader_parameter/atm_beta_mie = Vector3(3.038e-08, 3.038e-08, 3.038e-08)
-shader_parameter/sun_light_color = Color(0.98, 0.523, 0.294, 1)
+shader_parameter/sun_light_color = Color(0.9912723, 0.7918439, 0.69191146, 1)
 shader_parameter/sun_disk_color = Color(0.996094, 0.541334, 0.140076, 1)
 shader_parameter/sun_disk_intensity = 30.0
 shader_parameter/sun_disk_size = 0.02
@@ -89,7 +96,7 @@ shader_parameter/starmap_flip_u = false
 shader_parameter/starmap_flip_v = false
 shader_parameter/starmap_alignment = Vector3(2.68288, -0.25891, 0.40101)
 shader_parameter/star_rotation_offset = 9.38899
-shader_parameter/star_rotation = -8.09666383385321
+shader_parameter/star_rotation = -10.09178673178612
 shader_parameter/star_tilt = -1.2915436464758039
 shader_parameter/star_field_color = Color(1, 1, 1, 1)
 shader_parameter/star_field_texture = ExtResource("8_c70he")
@@ -105,8 +112,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.023763122, 0.9268458)
-shader_parameter/cirrus_position2 = Vector2(0.023763122, 0.9268458)
+shader_parameter/cirrus_position1 = Vector2(0.024386298, 0.92492735)
+shader_parameter/cirrus_position2 = Vector2(0.024386298, 0.92492735)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -116,7 +123,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(0.11881373, -0.36567155)
+shader_parameter/cumulus_position = Vector2(0.121929385, -0.3752601)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -126,7 +133,7 @@ shader_parameter/azimuthal_grid_rotation_offset = 0.03
 shader_parameter/show_equatorial_grid = false
 shader_parameter/equatorial_grid_color = Color(0, 0.75, 1, 1)
 shader_parameter/equatorial_grid_rotation_offset = 0.03
-shader_parameter/moon_matrix = Basis(-0.98118293, 0.1856005, 0.053220082, -0.085613064, -0.17115037, -0.98151815, -0.17306162, -0.9676053, 0.1838197)
+shader_parameter/moon_matrix = Basis(0.14953817, -0.95045316, -0.27253807, 0.42415208, 0.3106509, -0.8506415, 0.89315915, 0.011605783, 0.44959086)
 
 [sub_resource type="Sky" id="Sky_mw3q6"]
 sky_material = SubResource("ShaderMaterial_mo32q")
@@ -135,8 +142,7 @@ sky_material = SubResource("ShaderMaterial_mo32q")
 background_mode = 2
 sky = SubResource("Sky_mw3q6")
 ambient_light_source = 3
-ambient_light_color = Color(0.23515604, 0.27890667, 0.35, 1)
-ambient_light_sky_contribution = 0.7
+ambient_light_color = Color(0.67683256, 0.5410425, 0.47320297, 1)
 reflected_light_source = 2
 tonemap_mode = 3
 sdfgi_use_occlusion = true
@@ -157,6 +163,35 @@ streaming_distance = 1000.0
 draw_distance_multiplier = 2.0
 load_interiors = true
 
+[node name="CJController" type="Node3D" parent="." unique_id=656146806 node_paths=PackedStringArray("ped", "car", "ped_camera", "vehicle_camera")]
+script = ExtResource("20_ctrl")
+ped = NodePath("../CJ")
+car = NodePath("../Car")
+ped_camera = NodePath("../CameraRig/SpringArm3D/Camera3D")
+vehicle_camera = NodePath("../Car/CameraPivot/Camera3D")
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1207264470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2527.067, 39.722866, 1678.9004)
+script = ExtResource("21_camrig")
+target_path = NodePath("../CJ")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=2117007415]
+collision_mask = 0
+spring_length = 4.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=1892050782]
+
+[node name="CJ" type="GTAPedOnFoot" parent="." unique_id=782796429]
+camera_path = NodePath("../CameraRig/SpringArm3D/Camera3D")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2527.067, 39.722866, 1678.9004)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CJ" unique_id=969178823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_ped")
+
+[node name="CJVisual" type="Node3D" parent="CJ" unique_id=770773984]
+script = ExtResource("22_vis")
+
 [node name="ExportNavigation" type="Control" parent="." unique_id=1855623042]
 layout_mode = 3
 anchors_preset = 15
@@ -164,6 +199,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("13_export")
 
 [node name="ExportButton" type="Button" parent="ExportNavigation" unique_id=1220976458]
@@ -327,7 +363,6 @@ draw_pass_1 = SubResource("QuadMesh_mniao")
 
 [node name="body" parent="Car" unique_id=618895872 instance=ExtResource("18_y2ir2")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
-visible = false
 
 [node name="CameraPivot" type="Node3D" parent="Car" unique_id=648955449]
 
@@ -360,39 +395,40 @@ tertiary_color = Color(0.02, 0.1, 0.03, 1)
 quaternary_color = Color(0.02, 0.1, 0.03, 1)
 color_preset = 7
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.39331055, 0.08474541, 0.52282715)
+visible = false
 
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
 environment = SubResource("Environment_6k6j1")
 camera_attributes = SubResource("CameraAttributesPractical_m335s")
 script = ExtResource("10_6k6j1")
 editor_time_enabled = false
-current_time = 0.0
+current_time = 7.6
 wind_direction = 0.3141592653589793
 
 [node name="SunLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1207315250]
-transform = Transform3D(0.96259433, 0.26876304, 0.034329332, 0, 0.12670144, -0.9919409, -0.27094662, 0.9548367, 0.12196211, 0.034329332, -0.9919409, 0.12196211)
-light_color = Color(0.98, 0.523, 0.294, 1)
-light_energy = 0.0
+transform = Transform3D(0.5073206, -0.24284928, 0.82683134, 0, 0.9594711, 0.281807, -0.8617574, -0.1429665, 0.48675945, 0.82683134, 0.281807, 0.48675945)
+light_color = Color(0.9912723, 0.7918439, 0.69191146, 1)
+shadow_enabled = true
 directional_shadow_max_distance = 250.0
 
 [node name="MoonLight" type="DirectionalLight3D" parent="Sky3D" unique_id=1257949493]
-transform = Transform3D(0, -0.984911, -0.17306164, 0.18663582, 0.1700208, -0.9676053, 0.98242915, -0.0322995, 0.18381968, -0.17306164, -0.9676053, 0.18381968)
+transform = Transform3D(0, -0.44974065, 0.8931592, 0.999667, 0.023048442, 0.011605793, -0.025805524, 0.8928618, 0.4495909, 0.8931592, 0.011605793, 0.4495909)
 light_color = Color(0.572549, 0.776471, 0.956863, 1)
 light_energy = 0.0
 
 [node name="SkyDome" type="Node" parent="Sky3D" unique_id=1011329888]
 script = ExtResource("11_m335s")
-sun_azimuth = -2.8672163
-sun_altitude = -3.0145497
-moon_azimuth = -3.8968554
-moon_altitude = -2.8863628
+sun_azimuth = -2.102869
+sun_altitude = -1.2851194
+moon_azimuth = -2.0371375
+moon_altitude = -1.5591903
 wind_direction = 0.3141592653589793
 
 [node name="TimeOfDay" type="Node" parent="Sky3D" unique_id=184294769]
 script = ExtResource("12_sq6bu")
 editor_time_enabled = false
 dome_path = NodePath("../SkyDome")
-current_time = 0.0
+current_time = 7.6
 
 [node name="Lights" type="Node3D" parent="." unique_id=450166390]
 visible = false

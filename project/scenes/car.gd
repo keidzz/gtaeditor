@@ -1,7 +1,7 @@
 extends RigidBody3D
-class_name Car
+class_name CarGD
 
-@export var wheels: Array[Wheel]
+@export var wheels: Array[WheelGD]
 @export var acceleration := 600.0 
 @export var max_speed := 20.0
 @export var accel_curve : Curve
@@ -38,7 +38,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_released("decelerate"):
 		motor_input = 0
 		
-func _basic_steering_rotation(wheel: Wheel, delta: float) -> void:
+func _basic_steering_rotation(wheel: WheelGD, delta: float) -> void:
 	if not wheel.is_steer: return
 	
 	var turn_input := Input.get_axis("turn_right", "turn_left") * tire_turn_speed

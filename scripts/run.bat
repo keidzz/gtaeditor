@@ -25,7 +25,7 @@ if not exist "%GODOT%" (
 if "%NOBUILD%"=="0" (
     echo Compiling extension...
     cd /d "%ROOT%"
-    scons platform=windows target=template_debug
+    scons platform=windows target=template_debug api_version=4.7
     if errorlevel 1 (
         echo ERROR: Failed to compile
         pause

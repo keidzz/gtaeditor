@@ -1,5 +1,5 @@
 extends RayCast3D
-class_name Wheel
+class_name WheelGD
 
 @export var shapecast : ShapeCast3D
 @export var offset_shapecast : float = 0.3
@@ -15,7 +15,7 @@ class_name Wheel
 @export var z_brake_traction := 0.25
 
 
-@export_category("Motor")
+@export_group("Motor")
 @export var is_motor := false
 @export var is_steer := false
 @export var grip_curve : Curve
@@ -34,7 +34,7 @@ func _ready() -> void:
 		shapecast.add_exception(get_parent())
 		shapecast.position.y = offset_shapecast
 	
-func apply_wheel_physics(car: Car) -> void:
+func apply_wheel_physics(car: CarGD) -> void:
 	target_position.y = -(rest_dist + wheel_radius + over_extend)
 	
 	if shapecast:

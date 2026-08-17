@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://cykt6cqaqxnoq" path="res://scenes/wheel.gd" id="3_aoc7i"]
 [ext_resource type="PackedScene" uid="uid://dej78jryo27we" path="res://blender/cars/lowpolybmw/wheel.glb" id="4_klr1q"]
 [ext_resource type="PackedScene" uid="uid://vsibpbjhkj1b" path="res://blender/cars/lowpolybmw/body.glb" id="5_4vkub"]
-[ext_resource type="Texture2D" uid="uid://bxmfxpq07ogde" path="res://textures/Dark/texture_13.png" id="5_aoc7i"]
 [ext_resource type="Curve" uid="uid://cpjm6o4qmlec4" path="res://assets/curves/car_tire_back.tres" id="5_ba3wm"]
 [ext_resource type="Script" uid="uid://dlu7nesstlsye" path="res://scenes/followcamera.gd" id="5_klr1q"]
 [ext_resource type="Shader" uid="uid://cvd0x7lon1ur6" path="res://addons/sky_3d/shaders/SkyMaterial.gdshader" id="9_14lfh"]
@@ -54,7 +53,6 @@ size = Vector2(0.6, 1)
 orientation = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_klr1q"]
-albedo_texture = ExtResource("5_aoc7i")
 uv1_scale = Vector3(0.2, 0.2, 0.2)
 uv1_triplanar = true
 

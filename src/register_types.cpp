@@ -8,6 +8,12 @@
 #include <godot_cpp/godot.hpp>
 #include "classes/gta_model_instance.h"
 #include "classes/gta_vehicle_instance.h"
+#include "classes/gta_ped_on_foot.h"
+#include "rw/gta_dff_geometry.h"
+#include "rw/gta_dff_skeleton.h"
+#include "rw/gta_ifp_animation.h"
+#include "rw/gta_img_archive.h"
+#include "rw/gta_txd_texture.h"
 using namespace godot;
 
 void initialize_gdextension_types(ModuleInitializationLevel p_level) {
@@ -19,6 +25,12 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<MapExporter>();
 	ClassDB::register_class<GTAModelInstance>();
 	ClassDB::register_class<GTAVehicleInstance>();
+	ClassDB::register_class<GTAPedOnFoot>();
+	ClassDB::register_class<GTAImgArchive>();
+	ClassDB::register_class<GTAIfpAnimation>();
+	ClassDB::register_class<GTADffSkeleton>();
+	ClassDB::register_class<GTADffGeometry>();
+	ClassDB::register_class<GTATxdTexture>();
 }
 
 void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
