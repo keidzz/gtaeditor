@@ -2,23 +2,25 @@
 
 namespace godot {
 
-void MapMaterial::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode, bool is_additive) {
+void MapMaterial::apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent, Image::AlphaMode alpha_mode) {
 	mat->set_transparency(BaseMaterial3D::TRANSPARENCY_DISABLED);
 	mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_OPAQUE_ONLY);
 
-	if (is_additive) {
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-		mat->set_blend_mode(BaseMaterial3D::BLEND_MODE_ADD);
-		mat->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
-		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_DISABLED);
-	} else if (alpha_mode != Image::ALPHA_NONE) {
-		// Texture has alpha (trees, fences, etc.) — use scissor so shadows cast correctly
-		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
-		mat->set_alpha_scissor_threshold(0.5f);
-	} else if (is_transparent) {
-		// Material color has alpha < 1 but texture has no alpha
+	if (is_transparent) {
+		// Material color alpha < 255: the game renders these meshes with
+		// SRCALPHA/INVSRCALPHA blending (CustomBuildingPipeline.cpp:155).
+		// Windows, glass, and signs are all textured — the material's own
+		// alpha, not the texture's, is what makes them see-through.
 		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
 		mat->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
+	} else if (alpha_mode != Image::ALPHA_NONE) {
+		// Opaque material color + a texture that really has transparent
+		// pixels: the game's global alpha test (ref 140 in exteriors,
+		// Renderer.cpp:349) cuts these out — trees, fences, foliage.
+		// Scissor is used so the cutout still casts correct shadows.
+		// The threshold matches the game's 140/255 test reference.
+		mat->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
+		mat->set_alpha_scissor_threshold(140.0f / 255.0f);
 	}
 }
 
@@ -133,30 +135,28 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 
 	if (p_mat.textured && !p_mat.texture_name.is_empty()) {
 		Ref<ImageTexture> tex;
-		bool has_alpha = false;
-		if (textures.get_texture(p_txd_name, p_mat.texture_name, tex, has_alpha)) {
+		bool has_alpha_content = false;
+		if (textures.get_texture(p_txd_name, p_mat.texture_name, tex, has_alpha_content)) {
 			mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
 			has_texture = true;
 
-			if (has_alpha) {
+			if (has_alpha_content) {
 				alpha_mode = Image::ALPHA_BIT;
 			}
 		}
 	}
 
-	// Apply transparency using proper alpha detection.
-	// The material's own diffuse-color alpha only reliably indicates real
-	// transparency for UNTEXTURED materials (solid-color glass, light
-	// lenses, etc). Some GTA SA objects carry a color alpha slightly below
-	// 255 on an otherwise fully opaque, textured material — purely an
-	// artifact of authoring, not an intent to make it see-through — so
-	// trusting it there was making some opaque textured surfaces render
-	// as translucent. The texture's own alpha channel (already captured in
-	// alpha_mode above) is the authoritative source of transparency once a
-	// texture is actually applied.
-	bool is_transparent = (p_flags & FLAG_DRAW_LAST) || (!has_texture && p_mat.color.a < 1.0f);
-	bool is_additive = (p_flags & FLAG_ALPHA_TRANSPARENCY);
-	apply_transparency(mat, is_transparent, alpha_mode, is_additive);
+	// Transparency, following the real game's rules (verified against
+	// gta-reversed): a mesh is alpha-blended iff its material color alpha
+	// is < 255 — texture or not. An opaque material whose texture really
+	// contains transparent pixels is alpha-scissored instead (the game's
+	// global alpha test with ref 140 exterior, 100 in the alpha pass).
+	// The IDE flags are NOT transparency switches: FLAG_DRAW_LAST (0x4)
+	// only moves the entity into the sorted alpha draw list (back-to-front
+	// draw order), and FLAG_ALPHA_TRANSPARENCY (0x8) is only used by the
+	// game while LOD-distance-fading, never in the normal render pass.
+	bool is_transparent = p_mat.color.a < 1.0f;
+	apply_transparency(mat, is_transparent, alpha_mode);
 
 	return mat;
 }

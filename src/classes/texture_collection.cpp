@@ -24,7 +24,7 @@ void TextureCollection::add_parent(const String &p_child, const String &p_parent
 	parent_links[p_child.to_lower()] = p_parent.to_lower();
 }
 
-bool TextureCollection::get_texture(const String &p_txd_name, const String &p_texture_name, Ref<ImageTexture> &r_tex, bool &r_has_alpha) {
+bool TextureCollection::get_texture(const String &p_txd_name, const String &p_texture_name, Ref<ImageTexture> &r_tex, bool &r_has_alpha_content) {
 	String txd_key = p_txd_name.to_lower();
 	String tex_key = p_texture_name.to_lower();
 
@@ -35,7 +35,7 @@ bool TextureCollection::get_texture(const String &p_txd_name, const String &p_te
 
 		if (entry.textures.has(tex_key)) {
 			r_tex = entry.textures[tex_key].texture;
-			r_has_alpha = entry.textures[tex_key].has_alpha;
+			r_has_alpha_content = entry.textures[tex_key].has_alpha_content;
 			return true;
 		}
 	}
@@ -49,7 +49,7 @@ bool TextureCollection::get_texture(const String &p_txd_name, const String &p_te
 
 			if (parent_entry.textures.has(tex_key)) {
 				r_tex = parent_entry.textures[tex_key].texture;
-				r_has_alpha = parent_entry.textures[tex_key].has_alpha;
+				r_has_alpha_content = parent_entry.textures[tex_key].has_alpha_content;
 				return true;
 			}
 		}
@@ -58,9 +58,9 @@ bool TextureCollection::get_texture(const String &p_txd_name, const String &p_te
 	return false;
 }
 
-bool TextureCollection::get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha) {
+bool TextureCollection::get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha_content) {
 	Ref<ImageTexture> texture;
-	if (!get_texture(p_txd_name, p_texture_name, texture, r_has_alpha) || texture.is_null()) {
+	if (!get_texture(p_txd_name, p_texture_name, texture, r_has_alpha_content) || texture.is_null()) {
 		return false;
 	}
 

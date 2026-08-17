@@ -592,8 +592,10 @@ Array MapExporter::export_materials(const String &p_model_name, const ItemDefini
 		}
 		mat["texture"] = texture_path;
 		mat["texture_alpha"] = has_alpha;
-		mat["material_alpha"] = src.color.a < 1.0f || (p_def.flags & FLAG_DRAW_LAST);
-		mat["is_additive"] = (p_def.flags & FLAG_ALPHA_TRANSPARENCY) != 0;
+		// Same rules as MapMaterial: only the material color alpha makes a
+		// mesh blend; IDE DRAW_LAST/ADDITIVE flags are not transparency.
+		mat["material_alpha"] = src.color.a < 1.0f;
+		mat["is_additive"] = false;
 		mat["double_sided"] = (p_def.flags & FLAG_FACE_CULLING_OFF) != 0;
 		mat["has_alpha"] = has_alpha || bool(mat["material_alpha"]);
 		result.push_back(mat);
@@ -742,9 +744,12 @@ def make_materials(model_name, material_specs):
             mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
             if spec.get("has_alpha"):
                 mat.node_tree.links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
-        if spec.get("has_alpha"):
+        if spec.get("material_alpha"):
             mat.blend_method = "BLEND"
             mat.use_screen_refraction = True
+        elif spec.get("texture_alpha"):
+            mat.blend_method = "CLIP"
+            mat.alpha_threshold = 0.5
         mats.append(mat)
     return mats
 

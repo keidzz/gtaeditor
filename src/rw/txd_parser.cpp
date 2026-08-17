@@ -208,34 +208,27 @@ static void parse_txd_section(BinaryReader &reader, const RWSectionHeader &paren
 					uint32_t ext_format = raw_raster_format & 0xF000;
 
 					Ref<Image> image;
-					bool has_alpha = false;
 
 					if (ext_format & RASTER_EXT_PALETTE8) {
 						image = decode_palette8(reader, tex_width, tex_height);
-						has_alpha = true; // Palette8 often has alpha
 					} else {
 						reader.skip(4); // Data size
 
 						switch (base_format) {
 							case RASTER_565:
 								image = decode_dxt1(reader, tex_width, tex_height, false);
-								has_alpha = false;
 								break;
 							case RASTER_1555:
 								image = decode_dxt1(reader, tex_width, tex_height, true);
-								has_alpha = true;
 								break;
 							case RASTER_4444:
 								image = decode_dxt3(reader, tex_width, tex_height);
-								has_alpha = true;
 								break;
 							case RASTER_888:
 								image = decode_color_block(reader, tex_width, tex_height, false);
-								has_alpha = false;
 								break;
 							case RASTER_8888:
 								image = decode_color_block(reader, tex_width, tex_height, true);
-								has_alpha = true;
 								break;
 							default:
 								break;
@@ -247,7 +240,12 @@ static void parse_txd_section(BinaryReader &reader, const RWSectionHeader &paren
 						tex.name = name;
 						tex.alpha_name = alpha_name;
 						tex.texture = ImageTexture::create_from_image(image);
-						tex.has_alpha = has_alpha;
+						// Format-based guesses (e.g. DXT3/1555/8888 "always have
+						// alpha") are useless — SA textures almost always carry
+						// an alpha channel even when fully opaque, so nearly
+						// everything would look "transparent". Check actual
+						// pixel content instead (no-op on opaque formats).
+						tex.has_alpha_content = image->detect_alpha() != Image::ALPHA_NONE;
 
 						if (!name.is_empty()) {
 							textures[name] = tex;

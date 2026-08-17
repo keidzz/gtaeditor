@@ -31,7 +31,13 @@ struct TxdTexture {
 	String name;
 	String alpha_name;
 	Ref<ImageTexture> texture;
-	bool has_alpha = false;
+	// True only when the decoded texture actually contains non-opaque
+	// pixels (checked via Image::detect_alpha). The raster format is NOT
+	// a reliable signal: most SA DXT3/1555/8888 textures carry an alpha
+	// channel that is entirely 255. The game decides transparency from the
+	// material color alpha and cuts out texture alpha via a global alpha
+	// test, so this flag gates that cutout behavior.
+	bool has_alpha_content = false;
 };
 
 class TxdParser {

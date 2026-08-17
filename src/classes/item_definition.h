@@ -16,8 +16,8 @@ enum DefinitionFlags : uint32_t {
 	FLAG_NONE = 0,
 	FLAG_WET_EFFECT = 1 << 0,
 	FLAG_NIGHT_OBJECT = 1 << 1,
-	FLAG_DRAW_LAST = 1 << 2,        // Transparent, render after opaque
-	FLAG_ALPHA_TRANSPARENCY = 1 << 3, // Additive blending (needs NIGHT_OBJECT)
+	FLAG_DRAW_LAST = 1 << 2,        // Draw in the sorted alpha list (draw order, NOT transparency)
+	FLAG_ALPHA_TRANSPARENCY = 1 << 3, // Used by the game only while LOD-distance-fading, not as a blend mode
 	FLAG_DAY_FLAG = 1 << 4,
 	FLAG_INTERIOR_OBJECT = 1 << 5,
 	FLAG_SHADOWS = 1 << 6,           // Shadow mesh — disable rendering

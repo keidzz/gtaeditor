@@ -27,8 +27,9 @@ public:
 
 	// Get a texture by TXD name and texture name.
 	// Tries the TXD first, then its parent if not found.
-	bool get_texture(const String &p_txd_name, const String &p_texture_name, Ref<ImageTexture> &r_tex, bool &r_has_alpha);
-	bool get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha);
+	// r_has_alpha_content is true if the texture has actual non-opaque pixels.
+	bool get_texture(const String &p_txd_name, const String &p_texture_name, Ref<ImageTexture> &r_tex, bool &r_has_alpha_content);
+	bool get_texture_image(const String &p_txd_name, const String &p_texture_name, Ref<Image> &r_image, bool &r_has_alpha_content);
 
 	// Stats.
 	int get_txd_count() const;

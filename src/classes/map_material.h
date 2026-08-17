@@ -49,8 +49,11 @@ public:
 										  bool p_use_vertex_colors = true);
 
 	// Apply transparency settings based on alpha detection.
+	// is_transparent: material color alpha < 255 (alpha-blended, per the
+	// game's CustomBuildingPipeline). alpha_mode: texture with real
+	// transparent pixels (alpha-scissored, matching the game's alpha test).
 	static void apply_transparency(Ref<StandardMaterial3D> mat, bool is_transparent,
-								   Image::AlphaMode alpha_mode, bool is_additive = false);
+								   Image::AlphaMode alpha_mode);
 };
 
 } // namespace godot
