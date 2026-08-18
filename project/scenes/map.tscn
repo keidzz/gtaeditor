@@ -88,7 +88,7 @@ shader_parameter/moon_texture_flip_u = false
 shader_parameter/moon_texture_flip_v = false
 shader_parameter/moon_size = 0.07
 shader_parameter/atm_moon_mie_tint = Color(0.137255, 0.184314, 0.292196, 1)
-shader_parameter/atm_moon_mie_intensity = 0.17394696980714797
+shader_parameter/atm_moon_mie_intensity = 0.0
 shader_parameter/atm_moon_partial_mie_phase = Vector3(0.36, 1.64, 1.6)
 shader_parameter/starmap_color = Color(0.709804, 0.709804, 0.709804, 0.854902)
 shader_parameter/starmap_texture = ExtResource("9_mo32q")
@@ -112,8 +112,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.83967626, 0.4114375)
-shader_parameter/cirrus_position2 = Vector2(0.83967626, 0.4114375)
+shader_parameter/cirrus_position1 = Vector2(0.20484777, 0.36961174)
+shader_parameter/cirrus_position2 = Vector2(0.20484777, 0.36961174)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -123,7 +123,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(4.2041316, -12.926648)
+shader_parameter/cumulus_position = Vector2(1.0237954, -3.1500592)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -160,6 +160,7 @@ adjustment_brightness = 1.06
 streaming_distance = 1000.0
 draw_distance_multiplier = 2.0
 load_interiors = true
+load_map_in_editor = true
 
 [node name="CJController" type="Node3D" parent="." unique_id=656146806 node_paths=PackedStringArray("ped", "car", "ped_camera", "vehicle_camera")]
 script = ExtResource("20_ctrl")
@@ -210,6 +211,15 @@ offset_top = 12.0
 offset_right = 108.0
 offset_bottom = 43.0
 text = "Export"
+
+[node name="CJHouseButton" type="Button" parent="ExportNavigation" unique_id=2143658709]
+layout_mode = 1
+anchors_preset = -1
+offset_left = 12.0
+offset_top = 47.0
+offset_right = 132.0
+offset_bottom = 78.0
+text = "CJ House"
 
 [node name="Car" type="RigidBody3D" parent="." unique_id=432069324 node_paths=PackedStringArray("wheels", "skid_marks")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2495.3655, 13.612446, 1669.6431)
@@ -363,6 +373,7 @@ draw_pass_1 = SubResource("QuadMesh_mniao")
 
 [node name="body" parent="Car" unique_id=618895872 instance=ExtResource("18_y2ir2")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+visible = false
 
 [node name="CameraPivot" type="Node3D" parent="Car" unique_id=648955449]
 
@@ -389,13 +400,12 @@ spot_angle = 50.0
 
 [node name="GTAVehicleInstance" type="GTAVehicleInstance" parent="Car" unique_id=1153224885]
 model_name = "savanna"
-primary_color = Color(0.05, 0.35, 0.1, 1)
-secondary_color = Color(0.02, 0.1, 0.03, 1)
-tertiary_color = Color(0.02, 0.1, 0.03, 1)
-quaternary_color = Color(0.02, 0.1, 0.03, 1)
-color_preset = 7
+primary_color = Color(0.03, 0.03, 0.03, 1)
+secondary_color = Color(0.03, 0.03, 0.03, 1)
+tertiary_color = Color(0.03, 0.03, 0.03, 1)
+quaternary_color = Color(0.03, 0.03, 0.03, 1)
+color_preset = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.39331055, 0.08474541, 0.52282715)
-visible = false
 
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
 environment = SubResource("Environment_6k6j1")
@@ -522,5 +532,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2490.5916, 16.779104, 1651.86
 visible = false
 
 [connection signal="pressed" from="ExportNavigation/ExportButton" to="ExportNavigation" method="_on_export_button_pressed"]
+[connection signal="pressed" from="ExportNavigation/CJHouseButton" to="ExportNavigation" method="_on_cj_house_button_pressed"]
 
 [editable path="Car/body"]

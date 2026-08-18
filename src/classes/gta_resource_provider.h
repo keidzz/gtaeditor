@@ -47,6 +47,7 @@ public:
 	// LOD) loading, which stays MapBuilder's responsibility since only
 	// MapBuilder builds a `placements` array.
 	ImgArchive *get_img_archive() { return &img_archive; }
+	ImgArchive *get_interior_img_archive() { return &interior_img_archive; }
 	GtaPathResolver *get_path_resolver() { return &path_resolver; }
 	const HashMap<int32_t, ItemDefinition> &get_all_definitions() const { return definitions; }
 
@@ -67,6 +68,7 @@ public:
 private:
 	GtaPathResolver path_resolver;
 	ImgArchive img_archive;
+	ImgArchive interior_img_archive;
 	ModelCollection models;
 	TextureCollection textures;
 	HashMap<int32_t, ItemDefinition> definitions;

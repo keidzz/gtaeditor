@@ -239,6 +239,7 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 	// placement-specific and stays here since only MapBuilder owns `placements`.
 
 	ImgArchive *img_archive = resources->get_img_archive();
+	ImgArchive *interior_img_archive = resources->get_interior_img_archive();
 	GtaPathResolver *path_resolver = resources->get_path_resolver();
 
 	// Load COLs.
@@ -268,11 +269,18 @@ void MapBuilder::load_dat_file(const String &p_dat_path) {
 		for (int stream_idx = 0;; stream_idx++) {
 			String stream_name = basename + "_stream" + String::num_int64(stream_idx) + ".ipl";
 
-			if (!img_archive->has_entry(stream_name)) {
+			// Main map streams live in gta3.img; interior streams (int_la_stream*,
+			// gen_int*_stream*, savehous_stream*, ...) live in gta_int.img.
+			const ImgArchive *stream_archive = nullptr;
+			if (img_archive->has_entry(stream_name)) {
+				stream_archive = img_archive;
+			} else if (interior_img_archive->has_entry(stream_name)) {
+				stream_archive = interior_img_archive;
+			} else {
 				break;
 			}
 
-			PackedByteArray data = img_archive->read_entry(stream_name);
+			PackedByteArray data = stream_archive->read_entry(stream_name);
 			if (data.size() < 4)
 				break;
 

@@ -41,13 +41,21 @@ bool GtaResourceProvider::ensure_loaded(const String &p_gta_path) {
 
 	UtilityFunctions::print("[GtaResourceProvider] GTA path: ", abs_gta_path);
 
-	// 1. Load IMG archive (models/gta3.img).
+	// 1. Load IMG archives (models/gta3.img, models/gta_int.img).
 	String img_path = path_resolver.resolve("models/gta3.img");
 	if (img_path.is_empty()) {
 		UtilityFunctions::printerr("[GtaResourceProvider] Could not find models/gta3.img");
 		return false;
 	}
 	img_archive.load(img_path);
+
+	// gta_int.img holds the interior models (gen_int/sweets/cjhs/etc.).
+	String interior_img_path = path_resolver.resolve("models/gta_int.img");
+	if (interior_img_path.is_empty()) {
+		UtilityFunctions::printerr("[GtaResourceProvider] Could not find models/gta_int.img");
+		return false;
+	}
+	interior_img_archive.load(interior_img_path);
 
 	// 2. Parse default.dat.
 	String default_dat_path = path_resolver.resolve("data/default.dat");
@@ -124,24 +132,39 @@ void GtaResourceProvider::load_ide_file(const String &p_ide_path) {
 }
 
 void GtaResourceProvider::index_img_assets() {
-	// Register all DFF files from the IMG archive.
+	// Register all DFF files from the IMG archives.
 	Vector<String> dff_entries = img_archive.get_entries_with_extension(".dff");
 	for (int i = 0; i < dff_entries.size(); i++) {
 		models.register_dff(dff_entries[i], &img_archive);
 	}
+	Vector<String> int_dff_entries = interior_img_archive.get_entries_with_extension(".dff");
+	for (int i = 0; i < int_dff_entries.size(); i++) {
+		models.register_dff(int_dff_entries[i], &interior_img_archive);
+	}
 
-	// Register all TXD files from the IMG archive.
+	// Register all TXD files from the IMG archives.
 	Vector<String> txd_entries = img_archive.get_entries_with_extension(".txd");
 	for (int i = 0; i < txd_entries.size(); i++) {
 		textures.register_txd(txd_entries[i], &img_archive);
 	}
+	Vector<String> int_txd_entries = interior_img_archive.get_entries_with_extension(".txd");
+	for (int i = 0; i < int_txd_entries.size(); i++) {
+		textures.register_txd(int_txd_entries[i], &interior_img_archive);
+	}
 
-	// Parse all COL files from the IMG archive.
+	// Parse all COL files from the IMG archives.
 	Vector<String> col_entries = img_archive.get_entries_with_extension(".col");
 	for (int i = 0; i < col_entries.size(); i++) {
 		PackedByteArray data = img_archive.read_entry(col_entries[i]);
 		if (!data.is_empty()) {
 			models.load_col_bytes(data, col_entries[i]);
+		}
+	}
+	Vector<String> int_col_entries = interior_img_archive.get_entries_with_extension(".col");
+	for (int i = 0; i < int_col_entries.size(); i++) {
+		PackedByteArray data = interior_img_archive.read_entry(int_col_entries[i]);
+		if (!data.is_empty()) {
+			models.load_col_bytes(data, int_col_entries[i]);
 		}
 	}
 }
