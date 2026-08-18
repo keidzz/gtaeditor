@@ -72,6 +72,15 @@ bool GtaResourceProvider::ensure_loaded(const String &p_gta_path) {
 	// 4. Index all DFF/TXD/COL entries from the IMG archive.
 	index_img_assets();
 
+	// 5. Load the generic vehicle texture dictionary (loose file, not in any
+	// IMG). Vehicle DFFs reference its shared textures (vehicletyres128,
+	// vehiclegeneric256, vehiclelights128, vehicleshatter128, ...) — see
+	// TextureCollection::get_texture() for the fallback lookup.
+	String generic_vehicle_txd = path_resolver.resolve("models/generic/vehicle.txd");
+	if (!generic_vehicle_txd.is_empty()) {
+		textures.register_txd_file("vehicle", generic_vehicle_txd);
+	}
+
 	loaded = true;
 	UtilityFunctions::print("[GtaResourceProvider] Ready — ", definitions.size(), " IDE definitions, ",
 			models.get_model_count(), " models, ", textures.get_txd_count(), " texture dictionaries.");

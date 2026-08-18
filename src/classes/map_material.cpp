@@ -30,13 +30,14 @@ Ref<StandardMaterial3D> MapMaterial::create(const DffMaterial &p_mat, const Stri
 	Ref<StandardMaterial3D> mat;
 	mat.instantiate();
 
-	// GTA world/prop geometry carries its lighting baked into per-vertex
-	// colors (the game multiplies texture x vertex color; its directional
-	// sun only lights dynamic entities). Rendering those colors as albedo
-	// recovers the game's baked shading (AO, sun side, interior darkening)
-	// that otherwise reads as flat, uniformly-lit surfaces. Vehicles are
-	// excluded (p_use_vertex_colors = false): their paint is tuned for
-	// real-time lighting and most of their vertices are near-white anyway.
+	// GTA geometry carries its lighting baked into per-vertex colors (the
+	// game multiplies texture x vertex color; its directional sun only lights
+	// dynamic entities). Rendering those colors as albedo recovers the game's
+	// baked shading (AO, sun side, interior darkening) that otherwise reads
+	// as flat, uniformly-lit surfaces. This applies to vehicles too: their
+	// tires, glass, and trim get their darkness from vertex colors (most
+	// body-paint vertices are near-white, so the paint itself is barely
+	// affected).
 	if (p_use_vertex_colors) {
 		mat->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 	}

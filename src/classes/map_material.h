@@ -19,9 +19,9 @@ namespace godot {
 struct VehiclePaintColors {
 	// Not black by default — flat near-black on every slot made vehicles
 	// hard to even look at in the editor before you'd manually set colors.
-	// GTAVehicleInstance additionally exposes a `color_preset` property with
-	// a small built-in palette (see kColorPresets in gta_vehicle_instance.cpp)
-	// for quickly picking something more deliberate than this fallback.
+	// GTAVehicleInstance additionally exposes a `color_preset` property that
+	// picks a model's color combo from data/carcols.dat (see
+	// gta_vehicle_instance.cpp) for the game's actual paint colors.
 	Color primary = Color(0.55f, 0.05f, 0.05f); // muted red
 	Color secondary = Color(0.05f, 0.05f, 0.06f); // near-black
 	Color tertiary = Color(0.05f, 0.05f, 0.06f);
@@ -42,7 +42,9 @@ public:
 	// map-prop rendering (MapBuilder, GTAModelInstance) is unaffected.
 	// p_use_vertex_colors: GTA world geometry's baked lighting lives in the
 	// mesh vertex colors, so world/props enable vertex_color_use_as_albedo;
-	// vehicles pass false (paint is tuned for real-time lighting).
+	// vehicles do too (tires/glass/trim need it — the game multiplies vertex
+	// colors into every vehicle material), only paint colors pass through
+	// via p_paint.
 	static Ref<StandardMaterial3D> create(const DffMaterial &p_mat, const String &p_txd_name,
 										  uint32_t p_flags, TextureCollection &textures,
 										  const VehiclePaintColors *p_paint = nullptr,

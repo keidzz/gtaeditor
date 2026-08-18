@@ -1,5 +1,6 @@
 #include "texture_collection.h"
 
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 // =============================================================================
@@ -18,6 +19,34 @@ void TextureCollection::register_txd(const String &p_txd_name, const ImgArchive 
 	entry.archive = p_archive;
 	entry.loaded = false;
 	txd_entries[key] = entry;
+}
+
+void TextureCollection::register_txd_file(const String &p_txd_name, const String &p_file_path) {
+	String key = p_txd_name.to_lower();
+	if (key.ends_with(".txd")) {
+		key = key.substr(0, key.length() - 4);
+	}
+
+	Ref<FileAccess> file = FileAccess::open(p_file_path, FileAccess::READ);
+	if (file.is_null()) {
+		UtilityFunctions::printerr("[TextureCollection] Could not open TXD file '", p_file_path, "'.");
+		return;
+	}
+	PackedByteArray data = file->get_buffer(file->get_length());
+	if (data.is_empty()) {
+		return;
+	}
+
+	TxdEntry entry;
+	entry.txd_name = key;
+	entry.archive = nullptr;
+	entry.loaded = true;
+	entry.textures = TxdParser::parse(data);
+	if (!entry.textures.is_empty()) {
+		txd_entries[key] = entry;
+		UtilityFunctions::print("[TextureCollection] Loaded generic vehicle TXD '", key,
+				"' with ", entry.textures.size(), " textures.");
+	}
 }
 
 void TextureCollection::add_parent(const String &p_child, const String &p_parent) {
@@ -52,6 +81,23 @@ bool TextureCollection::get_texture(const String &p_txd_name, const String &p_te
 				r_has_alpha_content = parent_entry.textures[tex_key].has_alpha_content;
 				return true;
 			}
+		}
+	}
+
+	// Generic vehicle texture dictionary (models/generic/vehicle.txd):
+	// GTA vehicles share tyres, glass, light lenses, scratches, plates and
+	// interior trim textures from it (vehicletyres128, vehiclegeneric256,
+	// vehiclelights128, ...) instead of each model's own TXD. Without this
+	// fallback those parts render with no texture (flat white).
+	const String kGenericVehicleTxd = "vehicle";
+	if (txd_key != kGenericVehicleTxd && txd_entries.has(kGenericVehicleTxd)) {
+		TxdEntry &generic_entry = txd_entries[kGenericVehicleTxd];
+		ensure_loaded(generic_entry);
+
+		if (generic_entry.textures.has(tex_key)) {
+			r_tex = generic_entry.textures[tex_key].texture;
+			r_has_alpha_content = generic_entry.textures[tex_key].has_alpha_content;
+			return true;
 		}
 	}
 

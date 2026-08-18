@@ -22,6 +22,10 @@ public:
 	// Register a TXD entry from the IMG archive (stores raw bytes reference).
 	void register_txd(const String &p_txd_name, const ImgArchive *p_archive);
 
+	// Register a loose (non-IMG) TXD file, e.g. models/generic/vehicle.txd.
+	// Parsed immediately; failures are ignored (no entry is registered).
+	void register_txd_file(const String &p_txd_name, const String &p_file_path);
+
 	// Register a texture parent link (child TXD falls back to parent TXD).
 	void add_parent(const String &p_child, const String &p_parent);
 

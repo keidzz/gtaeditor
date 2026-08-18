@@ -1,6 +1,7 @@
 #ifndef GTA_VEHICLE_INSTANCE_H
 #define GTA_VEHICLE_INSTANCE_H
 
+#include "carcols_parser.h"
 #include "gta_resource_provider.h"
 #include "map_material.h"
 
@@ -73,11 +74,14 @@ public:
 	void set_quaternary_color(const Color &p_color);
 	Color get_quaternary_color() const;
 
-	// Quick-pick palette (Custom, Black, White, Red, ...). Applying a preset
-	// (anything other than Custom) overwrites primary_color/secondary_color
-	// (and tertiary/quaternary, matched to secondary) with that preset's
-	// colors — a faster starting point than typing RGB values by hand. Picking
-	// Custom just leaves whatever colors are currently set alone.
+	// Quick-pick color from the game's data/carcols.dat (0 = Custom). Applying
+	// a preset (anything other than Custom) overwrites primary/secondary/
+	// tertiary/quaternary with: presets 1..N the model's N-th `car`/`car4`
+	// color combo (the colors the game's traffic uses — usually 8 per car);
+	// presets beyond that, the full `col` palette (palette index = preset
+	// minus the model's combo count, wrapping), so any number still yields a
+	// real game color. Custom (0) leaves whatever colors are currently set
+	// alone.
 	void set_color_preset(int p_preset);
 	int get_color_preset() const;
 
@@ -97,6 +101,15 @@ private:
 
 	VehiclePaintColors paint;
 	int color_preset = 0; // 0 = Custom
+
+	// Parsed data/carcols.dat for the current gta_path (loaded lazily, once
+	// per path). Combo indices in the preset resolve against this.
+	CarColsData carcols;
+	String carcols_gta_path;
+
+	// Applies color_preset's combo for p_model_name to `paint`. No-op for
+	// preset 0 (Custom) or when the model has no carcols.dat combos.
+	void apply_color_preset(const String &p_model_name);
 
 	// Every part spawned by the last refresh_vehicle() call, so it can be
 	// torn down cleanly before rebuilding (model changed, paint changed, ...).

@@ -113,6 +113,10 @@ void GTAVehicleInstance::refresh_vehicle() {
 	// Tear down whatever we built last time (model changed, paint changed, ...).
 	clear_parts();
 
+	// Resolve the carcols.dat preset against the final model name so it works
+	// no matter which property the scene file sets first.
+	apply_color_preset(target_name);
+
 	// Texture dictionary: vehicles conventionally ship a same-named .txd
 	// (greenwoo.dff -> greenwoo.txd); prefer the IDE-resolved one if we have it.
 	String txd_name = have_def ? def.txd_name : target_name;
@@ -147,7 +151,10 @@ void GTAVehicleInstance::refresh_vehicle() {
 
 		Vector<DffMaterial> part_materials = models->get_geometry_materials(target_name, frame.geometry_index);
 		for (int s = 0; s < part_mesh->get_surface_count() && s < part_materials.size(); s++) {
-			Ref<StandardMaterial3D> mat = MapMaterial::create(part_materials[s], txd_name, flags, *textures, &paint, false);
+			// Vertex colors on: the game multiplies them into every vehicle
+			// material, and the baked darkness on tires/glass/trim lives
+			// there — without it those parts render flat white.
+			Ref<StandardMaterial3D> mat = MapMaterial::create(part_materials[s], txd_name, flags, *textures, &paint, true);
 			if (mat.is_valid()) {
 				part->set_surface_override_material(s, mat);
 			}
@@ -261,41 +268,57 @@ void GTAVehicleInstance::set_quaternary_color(const Color &p_color) {
 }
 Color GTAVehicleInstance::get_quaternary_color() const { return paint.quaternary; }
 
-// Small built-in palette of generic, realistic car paint colors — not an
-// attempt to reproduce GTA:SA's actual carcols.dat byte values (which this
-// project doesn't ship or have verified access to), just tasteful common
-// car colors so a freshly-placed GTAVehicleInstance doesn't default to flat
-// black. Index 0 (Custom) is a no-op — it leaves whatever colors are
-// currently set alone, rather than overwriting a color you already picked.
-struct ColorPreset {
-	const char *name;
-	Color primary;
-	Color secondary;
-};
-static const ColorPreset kColorPresets[] = {
-	{ "Custom", Color(), Color() },
-	{ "Black", Color(0.03f, 0.03f, 0.03f), Color(0.03f, 0.03f, 0.03f) },
-	{ "White", Color(0.90f, 0.90f, 0.90f), Color(0.90f, 0.90f, 0.90f) },
-	{ "Red", Color(0.60f, 0.05f, 0.05f), Color(0.15f, 0.02f, 0.02f) },
-	{ "Blue", Color(0.05f, 0.15f, 0.55f), Color(0.03f, 0.05f, 0.15f) },
-	{ "Silver", Color(0.65f, 0.65f, 0.68f), Color(0.40f, 0.40f, 0.42f) },
-	{ "Yellow", Color(0.85f, 0.70f, 0.05f), Color(0.15f, 0.12f, 0.02f) },
-	{ "Green", Color(0.05f, 0.35f, 0.10f), Color(0.02f, 0.10f, 0.03f) },
-	{ "Orange", Color(0.80f, 0.35f, 0.05f), Color(0.20f, 0.08f, 0.02f) },
-	{ "Purple", Color(0.35f, 0.10f, 0.45f), Color(0.10f, 0.03f, 0.15f) },
-	{ "Pink", Color(0.85f, 0.40f, 0.55f), Color(0.30f, 0.10f, 0.15f) },
-};
-static const int kColorPresetCount = sizeof(kColorPresets) / sizeof(kColorPresets[0]);
+// =============================================================================
+// Carcols presets
+// =============================================================================
+
+// carcols.dat is tiny (~15 KB); parse it once per gta_path and keep the
+// result cached on the instance so the preset doesn't re-read the file on
+// every refresh_vehicle().
+void GTAVehicleInstance::apply_color_preset(const String &p_model_name) {
+	if (color_preset == 0) {
+		return; // 0 == Custom: don't touch existing colors.
+	}
+	if (p_model_name.is_empty()) {
+		return; // Not resolvable yet; applied on a later refresh_vehicle().
+	}
+
+	if (carcols_gta_path != gta_path) {
+		carcols = CarColsData::parse(gta_path.path_join("data/carcols.dat"));
+		carcols_gta_path = gta_path;
+	}
+
+	const Vector<CarColorCombo> *combos = nullptr;
+	if (carcols.vehicle_combos.has(p_model_name)) {
+		combos = &carcols.vehicle_combos[p_model_name];
+	}
+
+	// Preset N = the model's N-th combo (1-based; combos usually 8 per car).
+	// Presets beyond the vehicle's combo count index the full carcols.dat
+	// palette directly (palette index = N - combos - 1, wrapping around), so
+	// "any number you want" still yields a real game color — the palette has
+	// ~250 entries, one per `col` line.
+	if (combos != nullptr && !combos->is_empty() && color_preset <= combos->size()) {
+		const CarColorCombo &combo = (*combos)[color_preset - 1];
+		paint.primary = combo.colors[0];
+		paint.secondary = combo.color_count > 1 ? combo.colors[1] : combo.colors[0];
+		paint.tertiary = combo.color_count > 2 ? combo.colors[2] : paint.secondary;
+		paint.quaternary = combo.color_count > 3 ? combo.colors[3] : paint.secondary;
+	} else if (!carcols.palette.is_empty()) {
+		int base = combos != nullptr && !combos->is_empty() ? combos->size() : 0;
+		int idx = (color_preset - base - 1) % carcols.palette.size();
+		Color c = carcols.palette[idx];
+		paint.primary = c;
+		paint.secondary = c;
+		paint.tertiary = c;
+		paint.quaternary = c;
+	} else {
+		UtilityFunctions::printerr("[GTAVehicleInstance] '", get_name(), "': carcols.dat palette is empty.");
+	}
+}
 
 void GTAVehicleInstance::set_color_preset(int p_preset) {
-	color_preset = CLAMP(p_preset, 0, kColorPresetCount - 1);
-	if (color_preset != 0) { // 0 == Custom: don't touch existing colors.
-		const ColorPreset &preset = kColorPresets[color_preset];
-		paint.primary = preset.primary;
-		paint.secondary = preset.secondary;
-		paint.tertiary = preset.secondary;
-		paint.quaternary = preset.secondary;
-	}
+	color_preset = p_preset;
 	if (is_inside_tree()) {
 		refresh_vehicle();
 	}
@@ -345,8 +368,7 @@ void GTAVehicleInstance::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_color_preset", "preset"), &GTAVehicleInstance::set_color_preset);
 	ClassDB::bind_method(D_METHOD("get_color_preset"), &GTAVehicleInstance::get_color_preset);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_preset", PROPERTY_HINT_ENUM,
-						 "Custom,Black,White,Red,Blue,Silver,Yellow,Green,Orange,Purple,Pink"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_preset"),
 			"set_color_preset", "get_color_preset");
 
 	ClassDB::bind_method(D_METHOD("refresh_vehicle"), &GTAVehicleInstance::refresh_vehicle);

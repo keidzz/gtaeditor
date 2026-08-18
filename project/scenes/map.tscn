@@ -112,8 +112,8 @@ shader_parameter/cirrus_absorption = 2.0
 shader_parameter/cirrus_sky_tint_fade = 0.5
 shader_parameter/cirrus_size = 1.0
 shader_parameter/cirrus_uv = Vector2(0.16, 0.11)
-shader_parameter/cirrus_position1 = Vector2(0.20484777, 0.36961174)
-shader_parameter/cirrus_position2 = Vector2(0.20484777, 0.36961174)
+shader_parameter/cirrus_position1 = Vector2(0.025838658, 0.9204563)
+shader_parameter/cirrus_position2 = Vector2(0.025838658, 0.9204563)
 shader_parameter/cirrus_texture = ExtResource("4_gw3fx")
 shader_parameter/cumulus_visible = true
 shader_parameter/cumulus_intensity = 0.6
@@ -123,7 +123,7 @@ shader_parameter/cumulus_absorption = 2.0
 shader_parameter/cumulus_noise_freq = 2.7
 shader_parameter/cumulus_sky_tint_fade = 0.0
 shader_parameter/cumulus_size = 0.5
-shader_parameter/cumulus_position = Vector2(1.0237954, -3.1500592)
+shader_parameter/cumulus_position = Vector2(0.12919067, -0.39760703)
 shader_parameter/cumulus_texture = ExtResource("5_n1psn")
 shader_parameter/cumulus_partial_mie_phase = Vector3(0.957564, 1.042436, 0.412)
 shader_parameter/cumulus_mie_intensity = 1.0
@@ -400,11 +400,11 @@ spot_angle = 50.0
 
 [node name="GTAVehicleInstance" type="GTAVehicleInstance" parent="Car" unique_id=1153224885]
 model_name = "savanna"
-primary_color = Color(0.03, 0.03, 0.03, 1)
-secondary_color = Color(0.03, 0.03, 0.03, 1)
-tertiary_color = Color(0.03, 0.03, 0.03, 1)
-quaternary_color = Color(0.03, 0.03, 0.03, 1)
-color_preset = 1
+primary_color = Color(0.2, 0.37254903, 0.24705882, 1)
+secondary_color = Color(0.2, 0.37254903, 0.24705882, 1)
+tertiary_color = Color(0.2, 0.37254903, 0.24705882, 1)
+quaternary_color = Color(0.2, 0.37254903, 0.24705882, 1)
+color_preset = 25
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.39331055, 0.08474541, 0.52282715)
 
 [node name="Sky3D" type="WorldEnvironment" parent="." unique_id=1744864078]
